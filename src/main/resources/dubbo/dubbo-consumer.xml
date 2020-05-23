@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://code.alibabatech.com/schema/dubbo
+        http://code.alibabatech.com/schema/dubbo/dubbo.xsd">
+
+    <dubbo:application name="@dubbo.name@"/>
+    <dubbo:consumer timeout="@dubbo.timeout@"/>
+
+    <!-- 新的国美在线注册中心 -->
+    <dubbo:registry id="central" address="@dubbo.zkAddress@" protocol="zookeeper" timeout="30000"/>
+
+    <dubbo:reference id="queryService" registry="central" retries="3" version="${dubbo.service-version}"
+                   interface="com.melo.left.dubbo.api.QueryService"
+                   loadbalance="random" check="false" actives="1800"
+                   timeout="5000" cluster="failfast"/>
+
+</beans>
