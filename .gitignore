@@ -28,3 +28,9 @@
 /.nb-gradle/
 /scs/
 /velocity.log.1
+/service/target/
+/test/target/
+/api/target/
+/api/api.iml
+/service/service.iml
+/test/test.iml
