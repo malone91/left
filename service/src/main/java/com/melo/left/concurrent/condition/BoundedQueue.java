@@ -49,5 +49,6 @@ public class BoundedQueue<T> {
         } finally {
             lock.unlock();
         }
+        return null;
     }
 }
