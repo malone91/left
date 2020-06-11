@@ -14,7 +14,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 public class MeloApplacation {
 
     public static void main(String[] args) {
-        SpringApplication.run(MeloApplacation.class, args);
+        //SpringApplication.run(MeloApplacation.class, args);
     }
 
     @GetMapping("melo")

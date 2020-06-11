@@ -11,11 +11,6 @@
 
     <artifactId>test</artifactId>
 
-    <properties>
-        <dubbo.name>melo_consumer</dubbo.name>
-        <dubbo.timeout>10000</dubbo.timeout>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.melo.left</groupId>
@@ -26,6 +21,18 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.gome.scot.dcs</groupId>
+            <artifactId>common-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dubbo</artifactId>
+            <version>2.6.0</version>
         </dependency>
     </dependencies>
 

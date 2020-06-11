@@ -1,10 +1,10 @@
 package com.melo.left.test.controller;
 
-import com.melo.api.QueryService;
-import com.melo.api.model.ProgramLanguage;
+import com.gome.scot.dcs.api.bangke.model.HandleBangkeProjectVO;
+import com.melo.left.test.service.TestService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -14,10 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class DubboTestController {
 
     @Autowired
-    private QueryService queryService;
+    private TestService testService;
 
-    @GetMapping("get")
-    public ProgramLanguage get() {
-        return queryService.select();
+    @PostMapping("test")
+    public HandleBangkeProjectVO test() {
+        return testService.test();
     }
+
 }
