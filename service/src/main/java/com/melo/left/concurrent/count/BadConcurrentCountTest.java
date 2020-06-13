@@ -9,13 +9,17 @@ package com.melo.left.concurrent.count;
  */
 public class BadConcurrentCountTest {
 
-    private long count = 0;
+    private volatile long count = 0;
 
+    /**
+     * synchronized能保证
+     */
     private void add10K() {
         int idx = 0;
         while (idx++ < 10000) {
             count++;
         }
+        System.out.println(idx);
     }
 
     public static long calculate() throws InterruptedException {
