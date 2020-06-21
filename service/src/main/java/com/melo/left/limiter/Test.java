@@ -3,7 +3,7 @@ package com.melo.left.limiter;
 public class Test {
 
     public static void main(String[] args) {
-        String[] message = new String[11];
+        String[] message = new String[10];
         for (int i = 0; i < message.length; i++) {
             message[i] = "obj_" + i;
         }

@@ -14,7 +14,7 @@ public class ObjectPool<T, R> {
     public ObjectPool(T[] array) {
         pool = new Vector<>();
         int size = array.length;
-        IntStream.rangeClosed(0, size).forEach(e -> {
+        IntStream.rangeClosed(0, size - 1).forEach(e -> {
             pool.add(array[e]);
         });
         semaphore = new Semaphore(size);
