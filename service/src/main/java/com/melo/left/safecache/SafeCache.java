@@ -19,17 +19,36 @@ public class SafeCache<K, V> {
     final Lock writeLock = readWriteLock.writeLock();
 
     /**
-     * 获取
+     * 按需加载获取
      * @param k
      * @return
      */
     V get(K k) {
+        V v = null;
         readLock.lock();
         try {
-            return map.get(k);
+            v = map.get(k);
         } finally {
             readLock.unlock();
         }
+        if (v != null) {
+            //缓存中存在则返回
+            return v;
+        }
+        //缓存中不存在则查DB
+        writeLock.lock();
+        try {
+            //其他线程可能已经查询过数据库
+            v = map.get(k);
+            if (v == null) {
+//                v = "from db";
+                map.put(k, v);
+            }
+        } finally {
+            writeLock.unlock();
+        }
+
+        return v;
     }
 
     /**
@@ -46,4 +65,6 @@ public class SafeCache<K, V> {
             writeLock.unlock();
         }
     }
+
+
 }
