@@ -12,7 +12,7 @@ public class Test {
             Thread thread = new Thread(() -> {
                 try {
                     pool.exec(t -> {
-                        System.out.println(Thread.currentThread().getId() + "当前对象T：" + t);
+                        System.out.println("当前线程id：" + Thread.currentThread().getId() + " ，当前对象T：" + t);
                         return t;
                     });
                 } catch (InterruptedException e) {
