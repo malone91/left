@@ -6,8 +6,10 @@ import java.util.concurrent.TimeUnit;
 /**
  * 默认情况下 CompletableFuture 会使用公共的 ForkJoinPool 线程池
  * 指定线程池在第二个参数里边
+ *
+ * ForkJoinPool在高并发场景里性能更高些
  */
-public class TestFuture {
+public class CompletableFutureFuture {
 
     public static void main(String[] args) {
         CompletableFuture<Void> f1 = CompletableFuture.runAsync(
