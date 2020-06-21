@@ -16,6 +16,7 @@ public class Test {
         for (int i = 0; i < 100; i++) {
             Thread thread = new Thread(() -> {
                 try {
+                    //定义Function并作为exec方法的参数
                     pool.exec(t -> {
                         System.out.println("当前线程id：" + Thread.currentThread().getId() + " ，当前对象T：" + t);
                         return t;
