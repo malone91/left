@@ -8,6 +8,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * 来自GeekTime Chapter 17 of Concurrent Program Practice
+ *
+ * 读写锁允许多个线程同时读共享变量，适用于读多写少的场景
+ *
  * HashMap不是线程安全的，使用读写锁保证其线程安全
  * ReadWriteLock不支持锁的升级，读锁没有释放时，获取写锁，会导致写锁永久等待，最终导致相关的线程阻塞，
  * 永远没有机会被唤醒。所以不允许读写锁的升级。
