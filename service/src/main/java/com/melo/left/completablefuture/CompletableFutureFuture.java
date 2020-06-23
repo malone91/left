@@ -4,6 +4,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 任务之间有聚合通过该类来解决
+ *
  * 默认情况下 CompletableFuture 会使用公共的 ForkJoinPool 线程池
  * 指定线程池在第二个参数里边
  *
