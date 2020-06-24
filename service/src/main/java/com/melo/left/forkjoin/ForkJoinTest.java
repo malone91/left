@@ -42,7 +42,7 @@ public class ForkJoinTest {
             //使用了异步子任务
             f1.fork();
             Fibonacci f2 = new Fibonacci(n - 2);
-            return f1.compute() + f2.compute();
+            return f2.compute() + f1.join();
         }
     }
 
