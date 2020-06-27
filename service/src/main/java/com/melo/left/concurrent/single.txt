@@ -8,8 +8,23 @@ class Singleton{
     synchronize{Singleton.class){
     //获取锁后二次检查
      if(singleton==null){
-     singleton=new Singleton(); }
-      } }
-      return singleton; }}
+     singleton=new Singleton();
+     }
+
+    }
+   }
+      return singleton;
+ }
+}
 
 volatile关键字只能保证可见性，无法保证原子性和互斥性。所以calc方法有可能被重复执行。
+分工 同步 互斥
+分工的设计模式：Thread-Per-Message Worker-Thread Producer-Consumer
+Thread-Per-Message:委托别人办理，为每一个任务分配独立的线程，处理完后自动销毁
+轻量级线程：Fiber 协程
+
+Worker-Thread避免线程的频繁创建、销毁及OOM问题
+线程池是一种实现方式
+
+ab -r -c 20000 -n 300000 ip+port
+Tomcat用线程池接收请求
