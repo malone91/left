@@ -1,0 +1,15 @@
+class Singleton{
+ private static volatile Singleton singleton;
+  //构造方法私有化 private Singleton() {}
+   //获取实例（单例）
+    public static Singleton getInstance() {
+    //第一次检查
+    if(singleton==null){
+    synchronize{Singleton.class){
+    //获取锁后二次检查
+     if(singleton==null){
+     singleton=new Singleton(); }
+      } }
+      return singleton; }}
+
+volatile关键字只能保证可见性，无法保证原子性和互斥性。所以calc方法有可能被重复执行。

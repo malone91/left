@@ -17,11 +17,17 @@ import java.util.function.Predicate;
  * //创建GuardedObject实例
  * GuardedObject go= GuardedObject.create(id);
  * //发送消息 send(msg1);
- * //等待MQ消息
+ * //等待MQ消息  重写抽象方法
  * Message r = go.get( t->t != null); }
  * void onMessage(Message msg){
  * //唤醒等待的线程
  * GuardedObject.fireEvent( msg.id, msg);}
+ *
+ * 每个请求都会创建一个GuardedObject，get和onChanged不是在一个线程里执行的，也不在一个对象里
+ *
+ * 可以用“多线程版本的 if”来理解 Guarded Suspension 模式，
+ * 不同于单线程中的 if，这个“多线程版本的 if”是需要等待的，而且还很执着，必须要等到条件为真。
+ * 但很显然这个世界，不是所有场景都需要这么执着，有时候我们还需要快速放弃。
  * @param <T>
  */
 public class GuardObject<T> {
@@ -55,7 +61,7 @@ public class GuardObject<T> {
     T get(Predicate<T> predicate) {
         lock.lock();
         try {
-            //MESA管程写法
+            //MESA管程写法  本例中相当于 obj!=null
             while (!predicate.test(obj)) {
                 done.await(timeout, TimeUnit.SECONDS);
             }
