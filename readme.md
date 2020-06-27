@@ -33,3 +33,5 @@ anti-糙快猛
 打工，放远长久，拿钱买人生，就挺不值的，工具人。
 
 pull or push, Java or Go
+时常需要看论文
+Go和Java都要用
