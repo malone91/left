@@ -24,7 +24,9 @@ public abstract class AbstractClass {
 
 
     /**
-     * sub class must override because of abstract description
+     * force sub class must override because of abstract description
+     * or this method is not abstract but throw exception in method body
+     * or this method is a empty body only with protected description
      */
     protected abstract void method1();
 
