@@ -1,0 +1,56 @@
+1、之前讲到的实现方式，从刚刚的分类方式上来看，它是一种同步阻塞的实现方式。
+观察者和被观察者代码在同一个线程内执行，被观察者一直阻塞，
+直到所有的观察者代码都执行完成之后，才执行后续的代码。
+对照上面讲到的用户注册的例子，register() 函数依次调用执行每个观察者的
+handleRegSuccess() 函数，等到都执行完成之后，才会返回结果给客户端。
+
+那如何实现一个异步非阻塞的观察者模式呢？简单一点的做法是，
+在每个 handleRegSuccess() 函数中，创建一个新的线程执行代码。
+不过，我们还有更加优雅的实现方式，那就是基于 EventBus 来实现。
+今天，我们就不展开讲解了。
+在下一讲中，我会用一节课的时间，借鉴 Google Guava EventBus
+框架的设计思想，手把手带你开发一个支持异步非阻塞的 EventBus 框架。
+它可以复用在任何需要异步非阻塞观察者模式的应用场景中。
+public interface RegObserver {
+  void handleRegSuccess(long userId);
+}
+
+public class RegPromotionObserver implements RegObserver {
+  private PromotionService promotionService; // 依赖注入
+
+  @Override
+  public void handleRegSuccess(long userId) {
+    promotionService.issueNewUserExperienceCash(userId);
+  }
+}
+
+public class RegNotificationObserver implements RegObserver {
+  private NotificationService notificationService;
+
+  @Override
+  public void handleRegSuccess(long userId) {
+    notificationService.sendInboxMessage(userId, "Welcome...");
+  }
+}
+
+public class UserController {
+  private UserService userService; // 依赖注入
+  private List<RegObserver> regObservers = new ArrayList<>();
+
+  // 一次性设置好，之后也不可能动态的修改
+  public void setRegObservers(List<RegObserver> observers) {
+    regObservers.addAll(observers);
+  }
+
+  public Long register(String telephone, String password) {
+    //省略输入参数的校验代码
+    //省略userService.register()异常的try-catch代码
+    long userId = userService.register(telephone, password);
+
+    for (RegObserver observer : regObservers) {
+      observer.handleRegSuccess(userId);
+    }
+
+    return userId;
+  }
+}
