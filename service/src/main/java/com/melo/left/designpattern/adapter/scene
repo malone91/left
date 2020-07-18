@@ -1,0 +1,119 @@
+1、封装有缺陷的接口设计
+public class CD { //这个类来自外部sdk，我们无权修改它的代码
+  //...
+  public static void staticFunction1() { //... }
+
+  public void uglyNamingFunction2() { //... }
+
+  public void tooManyParamsFunction3(int paramA, int paramB, ...) { //... }
+
+   public void lowPerformanceFunction4() { //... }
+}
+
+// 使用适配器模式进行重构
+public class ITarget {
+  void function1();
+  void function2();
+  void fucntion3(ParamsWrapperDefinition paramsWrapper);
+  void function4();
+  //...
+}
+// 注意：适配器类的命名不一定非得末尾带Adaptor
+public class CDAdaptor extends CD implements ITarget {
+  //...
+  public void function1() {
+     super.staticFunction1();
+  }
+
+  public void function2() {
+    super.uglyNamingFucntion2();
+  }
+
+  public void function3(ParamsWrapperDefinition paramsWrapper) {
+     super.tooManyParamsFunction3(paramsWrapper.getParamA(), ...);
+  }
+
+  public void function4() {
+    //...reimplement it...
+  }
+}
+2、统一多个类的接口设计
+
+public class ASensitiveWordsFilter { // A敏感词过滤系统提供的接口
+  //text是原始文本，函数输出用***替换敏感词之后的文本
+  public String filterSexyWords(String text) {
+    // ...
+  }
+
+  public String filterPoliticalWords(String text) {
+    // ...
+  }
+}
+
+public class BSensitiveWordsFilter  { // B敏感词过滤系统提供的接口
+  public String filter(String text) {
+    //...
+  }
+}
+
+public class CSensitiveWordsFilter { // C敏感词过滤系统提供的接口
+  public String filter(String text, String mask) {
+    //...
+  }
+}
+
+// 未使用适配器模式之前的代码：代码的可测试性、扩展性不好
+public class RiskManagement {
+  private ASensitiveWordsFilter aFilter = new ASensitiveWordsFilter();
+  private BSensitiveWordsFilter bFilter = new BSensitiveWordsFilter();
+  private CSensitiveWordsFilter cFilter = new CSensitiveWordsFilter();
+
+  public String filterSensitiveWords(String text) {
+    String maskedText = aFilter.filterSexyWords(text);
+    maskedText = aFilter.filterPoliticalWords(maskedText);
+    maskedText = bFilter.filter(maskedText);
+    maskedText = cFilter.filter(maskedText, "***");
+    return maskedText;
+  }
+}
+
+// 使用适配器模式进行改造
+public interface ISensitiveWordsFilter { // 统一接口定义
+  String filter(String text);
+}
+
+public class ASensitiveWordsFilterAdaptor implements ISensitiveWordsFilter {
+  private ASensitiveWordsFilter aFilter;
+  public String filter(String text) {
+    String maskedText = aFilter.filterSexyWords(text);
+    maskedText = aFilter.filterPoliticalWords(maskedText);
+    return maskedText;
+  }
+}
+//...省略BSensitiveWordsFilterAdaptor、CSensitiveWordsFilterAdaptor...
+
+// 扩展性更好，更加符合开闭原则，如果添加一个新的敏感词过滤系统，
+// 这个类完全不需要改动；而且基于接口而非实现编程，代码的可测试性更好。
+public class RiskManagement {
+  private List<ISensitiveWordsFilter> filters = new ArrayList<>();
+
+  public void addSensitiveWordsFilter(ISensitiveWordsFilter filter) {
+    filters.add(filter);
+  }
+
+  public String filterSensitiveWords(String text) {
+    String maskedText = text;
+    for (ISensitiveWordsFilter filter : filters) {
+      maskedText = filter.filter(maskedText);
+    }
+    return maskedText;
+  }
+}
+3、还可以用在不同格式的数据之间的适配。
+比如，把从不同征信系统拉取的不同格式的征信数据，统一为相同的格式，以方便存储和使用。
+List<String> stooges = Arrays.asList("Larry", "Moe", "Curly");
+
+在开发业务系统或者开发框架、组件的时候，
+我们统一使用 Slf4j 提供的接口来编写打印日志的代码，
+具体使用哪种日志框架实现（log4j、logback……），
+是可以动态地指定的（使用 Java 的 SPI 技术
