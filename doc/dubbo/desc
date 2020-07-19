@@ -58,5 +58,6 @@ serialize 层放在 common 模块中，以便更大程度复用。
      public interface Protocol {}  @SPI可以认为是定义默认实现类，该处意为定义默认协议dubbo
 
      @Adaptive？？？源代码需要讨论
+     https://www.cnblogs.com/qiaozhuangshi/p/11007026.html
      private static final Protocol PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
      Protocol 类带有 SPI 注解，因此我们可以确认默认是使用 dubbo=com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol 作为默认扩展点
