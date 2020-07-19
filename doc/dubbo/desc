@@ -1,0 +1,62 @@
+1、总体介绍
+一部分一定要弄清楚 NIO，以及比较流行的网络编程框架，比如 mina，netty等等，自己跑几个例子看看
+从功能来看，dubbo 就是一个 rpc 框架，但是他实际上包含 rpc 相关的所有东西，其底层实现还是这些 java rpc 机制
+dubbo还涉及到其他一些java的内容，重点包括：序列化、SPI、代理、Classloader、ScriptEngine 等东西
+注册中心返回服务提供者地址列表给消费者，如果有变更，注册中心将基于长连接推送变更数据给消费者
+服务消费者，从提供者地址列表中，基于软负载均衡算法，选一台提供者进行调用，如果调用失败，再选另一台调用
+服务消费者和提供者，在内存中累计调用次数和调用时间，定时每分钟发送一次统计数据到监控中心。
+注册中心负责服务地址的注册与查找，相当于目录服务，服务提供者和消费者只在启动时与注册中心交互，注册中心不转发请求，压力较小
+服务提供者向注册中心注册其提供的服务，并汇报调用时间到监控中心，此时间不包含网络开销
+服务消费者向注册中心获取服务提供者地址列表，并根据负载算法直接调用提供者，同时汇报调用时间到监控中心，此时间包含网络开销
+注册中心，服务提供者，服务消费者三者之间均为长连接，监控中心除外
+注册中心和监控中心全部宕机，不影响已运行的提供者和消费者，消费者在本地缓存了提供者列表
+注册中心和监控中心都是可选的，服务消费者可以直连服务提供者
+注册中心为对等集群，可动态增加机器部署实例，所有客户端将自动发现新的注册中心；
+服务提供者无状态，可动态增加机器部署实例，注册中心将推送新的服务提供者信息给消费者
+2、代码概括
+dubbo-common 公共逻辑模块，包括 Util 类和通用模型。
+dubbo-remoting 远程通讯模块，相当于 Dubbo 协议的实现，如果 RPC 用 RMI 协议则不需要使用此包。
+dubbo-rpc 远程调用模块，抽象各种协议，以及动态代理，只包含一对一的调用，不关心集群的管理。
+dubbo-cluster 集群模块，将多个服务提供方伪装为一个提供方，包括：负载均衡, 容错，路由等，集群的地址列表可以是静态配置的，也可以是由注册中心下发。
+dubbo-registry 注册中心模块，基于注册中心下发地址的集群方式，以及对各种注册中心的抽象。
+dubbo-monitor 监控模块，统计服务调用次数，调用时间的，调用链跟踪的服务。
+dubbo-config 配置模块，是 Dubbo 对外的 API，用户通过 Config 使用 Dubbo，隐藏Dubbo 所有细节。
+dubbo-container 容器模块，是一个 Standlone 的容器，以简单的 Main 加载 Spring启动，因为服务通常不需要 Tomcat/JBoss 等 Web 容器的特性，没必要用 Web 容器去加载服务。
+3、复杂的程序都需要分层
+container 为服务容器，用于部署运行服务，没有在层中画出。
+protocol 层和 proxy 层都放在 rpc 模块中，这两层是 rpc 的核心，在不需要集群时(只有一个提供者)，可以只使用这两层完成 rpc 调用。
+transport 层和 exchange 层都放在 remoting 模块中，为 rpc 调用的通讯基础。
+serialize 层放在 common 模块中，以便更大程度复用。
+4、核心机制：设计模式，bean加载，扩展点机制，动态代理，远程调用流程
+    工厂模式：ServiceConfig
+    ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
+    Dubbo 里有很多这种代码。这也是一种工厂模式，只是实现类的获取采用了 JDK SPI 的机制。
+    这么实现的优点是可扩展性强，想要扩展实现，只需要在 classpath 下增加个文件就可以了，代码零侵入。
+    另外，像上面的 Adaptive 实现，可以做到调用时动态决定调用哪个实现，但是由于这种实现采用了动态代理，
+    会造成代码调试比较麻烦，需要分析出实际调用的实现类。
+    装饰器模式：Provider invoke chain  ProtocolFilterWrapper 的 buildInvokerChain
+    EchoFilter-》ClassLoaderFilter-》GenericFilter-》ContextFilter-》ExceptionFilter-》TimeoutFilter-》MonitorFilter-》TraceFilter
+    装饰器和责任链模式的混合使用。例如，EchoFilter 的作用是判断
+    是否是回声测试请求，是的话直接返回内容，这是一种责任链的体现。而像 ClassLoaderFilter
+    则只是在主功能上添加了功能，更改当前线程的 ClassLoader，这是典型的装饰器模式
+    观察者模式 provider启动时
+    动态代理模式： 扩展 JDK SPI 的类 ExtensionLoader 的 Adaptive 实现是典型的动态代理实现
+    需要灵活地控制实现类，即在调用阶段动态地根据参数决定调用哪个实现类，所以采用先生
+    成代理类的方法，能够做到灵活的调用。生成代理类的代码是 ExtensionLoader 的
+    createAdaptiveExtensionClassCode 方法。代理类的主要逻辑是，获取 URL 参数中指定参数的值作为获取实现类的 key
+
+    dubbo-container-spring 启动时，是启动了 spring 上下文。此时它会去解
+    析 spring 的 bean 配置文件，具体的解析工作是由 dubbo-config-spring 完成的。我们可以看
+    到 dubbo-demo-provider 项目中引用到了对应的类。
+    DubboNamespaceHandler
+
+     ServiceBean 中 export 过程（暴露服务）是在onApplicationEvent(ApplicationEvent event)过程触发的
+     实际调用finishRefresh
+
+     只是 java spi 机制是 java 后台帮你实现读取文件并对接具体的实现类，而 dubbo 是自己去读文件
+     @SPI("dubbo")
+     public interface Protocol {}  @SPI可以认为是定义默认实现类，该处意为定义默认协议dubbo
+
+     @Adaptive？？？源代码需要讨论
+     private static final Protocol PROTOCOL = ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();
+     Protocol 类带有 SPI 注解，因此我们可以确认默认是使用 dubbo=com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol 作为默认扩展点
