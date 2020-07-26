@@ -1,3 +1,7 @@
+工作中经常封装的三方接口其实就是适配器模式
+
+将不兼容的接口转换为可兼容的接口
+
 1、类适配器使用继承关系来实现
 Adaptee 是一组不兼容 ITarget 接口定义的接口，
 Adaptor 将 Adaptee 转化成一组符合
@@ -71,3 +75,7 @@ public class Adaptor implements ITarget {
 比起对象适配器的实现方式，Adaptor 的代码量要少一些。
 如果 Adaptee 接口很多，而且 Adaptee 和 ITarget 接口定义大部分都不相同，
 那我们推荐使用对象适配器，因为组合结构相对于继承更加灵活。
+
+Java 中的 Arrays.asList() 也可以看作一种数据适配器，
+将数组类型的数据转化为集合容器类型
+List<String> stooges = Arrays.asList("Larry", "Moe", "Curly");

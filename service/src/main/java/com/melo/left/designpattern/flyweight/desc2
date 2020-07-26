@@ -1,0 +1,43 @@
+Integer i = 59；底层执行了：Integer i = Integer.valueOf(59);
+
+
+Integer i1 = 56;
+Integer i2 = 56;
+Integer i3 = 129;
+Integer i4 = 129;
+System.out.println(i1 == i2);true
+System.out.println(i3 == i4);false
+
+如果要创建的 Integer 对象的值在 -128 到 127 之间，
+会从 IntegerCache 类中直接返回，否则才调用 new 方法创建
+
+public static Integer valueOf(int i) {
+    if (i >= IntegerCache.low && i <= IntegerCache.high)
+        return IntegerCache.cache[i + (-IntegerCache.low)];
+    return new Integer(i);
+}
+
+
+String s1 = "小争哥";
+String s2 = "小争哥";
+String s3 = new String("小争哥");
+
+System.out.println(s1 == s2);true
+System.out.println(s1 == s3);false
+一块存储区来存储字符串常量，这块存储区叫作“字符串常量池”
+
+不要过度使用：
+实际上，享元模式对 JVM 的垃圾回收并不友好。
+因为享元工厂类一直保存了对享元对象的引用，这就导致享元对象在没有任何代码使用的情况下，
+也并不会被 JVM 垃圾回收机制自动回收掉。因此，在某些情况下，如果对象的生命周期很短，
+也不会被密集使用，利用享元模式反倒可能会浪费更多的内存。
+所以，除非经过线上验证，利用享元模式真的可以大大节省内存，
+否则，就不要过度使用这个模式，
+为了一点点内存的节省而引入一个复杂的设计模式，得不偿失啊。
+
+IntegerCache 只能缓存事先指定好的整型对象，
+那我们是否可以借鉴 String 的设计思路，不事先指定需要缓存哪些整型对象，
+而是在程序的运行过程中，当用到某个整型对象的时候，创建好放置到 IntegerCache，
+下次再被用到的时候，直接从 IntegerCache 中返回呢？
+WeakHashMap
+可以使用weakReference，当没有其他变量引用时，被JVM回收

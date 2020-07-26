@@ -98,3 +98,27 @@ public class FilterInputStream extends InputStream {
     return in.markSupported();
   }
 }
+
+为什么会出现装饰器模式？
+如果我们继续按照继承的方式来实现的话，就需要再继续派生出 DataFileInputStream、
+DataPipedInputStream 等类。如果我们还需要既支持缓存、又支持按照基本类型读取数据的类，
+那就要再继续派生出 BufferedDataFileInputStream、BufferedDataPipedInputStream 等 n 多类。
+这还只是附加了两个增强功能，如果我们需要附加更多的增强功能，
+那就会导致组合爆炸，类继承结构变得无比复杂，代码既不好扩展，也不好维护。
+
+第一个比较特殊的地方是：装饰器类和原始类继承同样的父类，这样我们可以对原始类“嵌套”多个装饰器类。
+比如，下面这样一段代码，我们对 FileInputStream 嵌套了两个装饰器类：
+BufferedInputStream 和 DataInputStream，让它既支持缓存读取，又支持按照基本数据类型来读取数据。
+
+InputStream in = new FileInputStream("/user/wangzheng/test.txt");
+InputStream bin = new BufferedInputStream(in);
+DataInputStream din = new DataInputStream(bin);
+int data = din.readInt();
+
+为了避免代码重复，Java IO 抽象出了一个装饰器父类 FilterInputStream
+InputStream 的所有的装饰器类（BufferedInputStream、DataInputStream）都继承自这个装饰器父类。
+
+对于添加缓存这个应用场景使用哪种模式，要看设计者的意图，如果设计者不需要用户关注是否使用缓存功能，
+要隐藏实现细节，也就是说用户只能看到和使用代理类，那么就使用proxy模式；
+反之，如果设计者需要用户自己决定是否使用缓存的功能，
+需要用户自己新建原始对象并动态添加缓存功能，那么就使用decorator模式。

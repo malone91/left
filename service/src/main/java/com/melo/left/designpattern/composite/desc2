@@ -1,0 +1,88 @@
+公司的组织结构包含部门和员工两种数据类型。其中，部门又可以包含子部门和员工。
+
+
+public abstract class HumanResource {
+  protected long id;
+  protected double salary;
+
+  public HumanResource(long id) {
+    this.id = id;
+  }
+
+  public long getId() {
+    return id;
+  }
+
+  public abstract double calculateSalary();
+}
+
+public class Employee extends HumanResource {
+  public Employee(long id, double salary) {
+    super(id);
+    this.salary = salary;
+  }
+
+  @Override
+  public double calculateSalary() {
+    return salary;
+  }
+}
+
+public class Department extends HumanResource {
+  private List<HumanResource> subNodes = new ArrayList<>();
+
+  public Department(long id) {
+    super(id);
+  }
+
+  @Override
+  public double calculateSalary() {
+    double totalSalary = 0;
+    for (HumanResource hr : subNodes) {
+      totalSalary += hr.calculateSalary();
+    }
+    this.salary = totalSalary;
+    return totalSalary;
+  }
+
+  public void addSubNode(HumanResource hr) {
+    subNodes.add(hr);
+  }
+}
+
+// 构建组织架构的代码
+public class Demo {
+  private static final long ORGANIZATION_ROOT_ID = 1001;
+  private DepartmentRepo departmentRepo; // 依赖注入
+  private EmployeeRepo employeeRepo; // 依赖注入
+
+  public void buildOrganization() {
+    Department rootDepartment = new Department(ORGANIZATION_ROOT_ID);
+    buildOrganization(rootDepartment);
+  }
+
+  private void buildOrganization(Department department) {
+    List<Long> subDepartmentIds = departmentRepo.getSubDepartmentIds(department.getId());
+    for (Long subDepartmentId : subDepartmentIds) {
+      Department subDepartment = new Department(subDepartmentId);
+      department.addSubNode(subDepartment);
+      buildOrganization(subDepartment);
+    }
+    List<Long> employeeIds = employeeRepo.getDepartmentEmployeeIds(department.getId());
+    for (Long employeeId : employeeIds) {
+      double salary = employeeRepo.getEmployeeSalary(employeeId);
+      department.addSubNode(new Employee(employeeId, salary));
+    }
+  }
+}
+
+将一组对象（员工和部门）组织成树形结构，
+以表示一种‘部分 - 整体’的层次结构（部门与子部门的嵌套结构）。
+组合模式让客户端可以统一单个对象（员工）和组合对象（部门）的处理逻辑（递归遍历）。”
+
+tomcat的多层容器也是使用了组合模式。只需要调用最外层容器Server的init方法，整个程序就起来了。客户端只需要处理最外层的容器，就把整个系统拎起来了。
+
+组合模式使用了树形的数据结构以及递归算法，
+这里也可以看出知识的相通性（算法和设计模式）。
+想到这方面的另外一个例子就是责任链模式，
+责任链模式就是使用了数据结构中的链表和递归算法。

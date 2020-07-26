@@ -22,3 +22,74 @@ JDBC 本身就相当于“抽象”。注意，这里所说的“抽象”，指
 而是跟具体数据库相关的一套“类库”。JDBC 和 Driver 独立开发，
 通过对象之间的组合关系，组装在一起。
 JDBC 的所有逻辑操作，最终都委托给 Driver 来执行。
+
+根据不同的告警规则，触发不同类型的告警。
+告警支持多种通知渠道，包括：邮件、短信、微信、自动语音电话。
+通知的紧急程度有多种类型，
+包括：SEVERE（严重）、URGENCY（紧急）、NORMAL（普通）、TRIVIAL（无关紧要）。
+不同的紧急程度对应不同的通知渠道。
+
+Notification 类相当于抽象，MsgSender 类相当于实现，两者可以独立开发，
+通过组合关系（也就是桥梁）任意组合在一起。所谓任意组合的意思就是，
+不同紧急程度的消息和发送渠道之间的对应关系，不是在代码中固定写死的，
+我们可以动态地去指定（比如，通过读取配置来获取对应关系）。
+public interface MsgSender {
+  void send(String message);
+}
+
+public class TelephoneMsgSender implements MsgSender {
+  private List<String> telephones;
+
+  public TelephoneMsgSender(List<String> telephones) {
+    this.telephones = telephones;
+  }
+
+  @Override
+  public void send(String message) {
+    //...
+  }
+
+}
+
+public class EmailMsgSender implements MsgSender {
+  // 与TelephoneMsgSender代码结构类似，所以省略...
+}
+
+public class WechatMsgSender implements MsgSender {
+  // 与TelephoneMsgSender代码结构类似，所以省略...
+}
+
+public abstract class Notification {
+  protected MsgSender msgSender;
+
+  public Notification(MsgSender msgSender) {
+    this.msgSender = msgSender;
+  }
+
+  public abstract void notify(String message);
+}
+
+public class SevereNotification extends Notification {
+  public SevereNotification(MsgSender msgSender) {
+    super(msgSender);
+  }
+
+  @Override
+  public void notify(String message) {
+    msgSender.send(message);
+  }
+}
+
+public class UrgencyNotification extends Notification {
+  // 与SevereNotification代码结构类似，所以省略...
+}
+public class NormalNotification extends Notification {
+  // 与SevereNotification代码结构类似，所以省略...
+}
+public class TrivialNotification extends Notification {
+  // 与SevereNotification代码结构类似，所以省略...
+}
+
+一个类存在两个（或多个）独立变化的维度，
+我们通过组合的方式，让这两个（或多个）维度可以独立进行扩展。
+抽象”和“实现”独立开发，通过对象之间的组合关系，组装在一起。
