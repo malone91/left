@@ -1,0 +1,50 @@
+https://www.jianshu.com/p/d27d698802fd
+
+工厂方法：
+如果非得要将 if 分支逻辑去掉，那该怎么办呢？
+比较经典处理方法就是利用多态。
+按照多态的实现思路，对上面的代码进行重构
+
+由于使用了多态，
+IFactory factoryA = new FactoryA();
+IFactory factoryB = new FactoryB();
+工厂方法克服了简单工厂违背的开放封闭原则的缺点，又保持了封装对象创建过程的优点
+
+the factory method is a single method,
+and an abstract factory is an object
+
+public interface IRuleConfigParserFactory {
+  IRuleConfigParser createParser();
+}
+
+public class JsonRuleConfigParserFactory implements IRuleConfigParserFactory {
+  @Override
+  public IRuleConfigParser createParser() {
+    return new JsonRuleConfigParser();
+  }
+}
+
+public class XmlRuleConfigParserFactory implements IRuleConfigParserFactory {
+  @Override
+  public IRuleConfigParser createParser() {
+    return new XmlRuleConfigParser();
+  }
+}
+
+public class YamlRuleConfigParserFactory implements IRuleConfigParserFactory {
+  @Override
+  public IRuleConfigParser createParser() {
+    return new YamlRuleConfigParser();
+  }
+}
+
+public class PropertiesRuleConfigParserFactory implements IRuleConfigParserFactory {
+  @Override
+  public IRuleConfigParser createParser() {
+    return new PropertiesRuleConfigParser();
+  }
+}
+
+当我们新增一种 parser 的时候，只需要新增一个实现了
+ IRuleConfigParserFactory 接口的 Factory 类即可。
+所以，工厂方法模式比起简单工厂模式更加符合开闭原则。

@@ -1,0 +1,55 @@
+简单工厂
+工厂方法
+抽象工厂
+
+工厂模式封装复杂的创建过程，将对象的场景和使用分离，让代码更加清晰。
+
+简单工厂模式最大的优点在于工厂类中包含了必要的逻辑判断，
+根据客户端的选择条件动态实例化相关的类，
+对于客户端来说，去除了与具体产品的依赖。
+但是当需求变动的时候，需要对原有的类进行修改，违背了开放封闭原则。
+
+简单工厂：善于将功能独立的代码块封装成函数
+为了让类的职责更加单一、代码更加清晰，我们还可以进一步将 createParser()
+ 函数剥离到一个独立的类中，让这个类只负责对象的创建
+
+简单工厂模式实现的第一种：
+private IRuleConfigParser createParser(String configFormat) {
+  IRuleConfigParser parser = null;
+  if ("json".equalsIgnoreCase(configFormat)) {
+  parser = new JsonRuleConfigParser();
+  } else if ("xml".equalsIgnoreCase(configFormat)) {
+  parser = new XmlRuleConfigParser();
+  } else if ("yaml".equalsIgnoreCase(configFormat)) {
+  parser = new YamlRuleConfigParser();
+  } else if ("properties".equalsIgnoreCase(configFormat)) {
+  parser = new PropertiesRuleConfigParser();    }
+  return parser;  }
+简单工厂模式实现的第二种：
+我们每次调用 RuleConfigParserFactory 的 createParser() 的时候，
+都要创建一个新的 parser。实际上，如果 parser 可以复用，
+为了节省内存和对象创建的时间，我们可以将 parser 事先创建好缓存起来。
+当调用 createParser() 函数的时候，我们从缓存中取出 parser 对象直接使用
+
+public class RuleConfigParserFactory {
+  private static final Map<String, RuleConfigParser> cachedParsers = new HashMap<>();
+
+  static {
+    cachedParsers.put("json", new JsonRuleConfigParser());
+    cachedParsers.put("xml", new XmlRuleConfigParser());
+    cachedParsers.put("yaml", new YamlRuleConfigParser());
+    cachedParsers.put("properties", new PropertiesRuleConfigParser());
+  }
+
+  public static IRuleConfigParser createParser(String configFormat) {
+    if (configFormat == null || configFormat.isEmpty()) {
+      return null;//返回null还是IllegalArgumentException全凭你自己说了算
+    }
+    IRuleConfigParser parser = cachedParsers.get(configFormat.toLowerCase());
+    return parser;
+  }
+}
+
+尽管简单工厂模式的代码实现中，有多处 if 分支判断逻辑，违背开闭原则，
+但权衡扩展性和可读性，这样的代码实现在大多数情况下
+（比如，不需要频繁地添加 parser，也没有太多的 parser）是没有问题的。

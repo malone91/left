@@ -1,0 +1,154 @@
+一个工厂类只负责某个类对象或者某一组相关类对象（继承自同一抽象类或者接口的子类）的创建，
+而 DI 容器负责的是整个应用中所有类对象的创建。
+
+DI容器负责的事情要比单纯的工厂模式要多。比如，它还包括配置的解析、对象生命周期的管理
+
+从上面的代码中，我们可以看出，ClassPathXmlApplicationContext 负责
+组装 BeansFactory 和 BeanConfigParser 两个类，串联执行流程：
+从 classpath 中加载 XML 格式的配置文件，通过 BeanConfigParser 解析为统一的 BeanDefinition 格式，
+然后，BeansFactory 根据 BeanDefinition 来创建对象。
+
+ 1、构造器循环依赖
+构造器注入的循环依赖是无法解决的，只能抛出bean创建异常使容器无法启动
+如何判断是循环依赖？
+把正在创建的bean放入到一个(正在创建的map)中，如果依赖创建bean在此map中存在，则抛出异常。
+2、setter方法循环依赖
+①单例情况可以解决循环依赖，方法是提前暴露一个返回该单例的工厂方法，让依赖对象可以引用到
+②多例不能解决循环依赖，因为多例不需要缓存
+
+Spring解决循环依赖的办法是多级缓存
+
+setter注入：根据BenDefinition创建的bean可以是未完成的bean，就是说bean里面的属性可以是没有填充过的，
+这个时候bean依然能创建成功，之后属性，
+postConstruct、InitializingBean、init-method完成之后才能算是一个完整的bean，所以即使出现循环依赖也能解决。
+
+提前暴露还没有初始化结束的bean
+
+
+public class BeansFactory {
+  private ConcurrentHashMap<String, Object> singletonObjects = new ConcurrentHashMap<>();
+  private ConcurrentHashMap<String, BeanDefinition> beanDefinitions = new ConcurrentHashMap<>();
+
+  public void addBeanDefinitions(List<BeanDefinition> beanDefinitionList) {
+    for (BeanDefinition beanDefinition : beanDefinitionList) {
+      this.beanDefinitions.putIfAbsent(beanDefinition.getId(), beanDefinition);
+    }
+
+    for (BeanDefinition beanDefinition : beanDefinitionList) {
+      if (beanDefinition.isLazyInit() == false && beanDefinition.isSingleton()) {
+        createBean(beanDefinition);
+      }
+    }
+  }
+
+  public Object getBean(String beanId) {
+    BeanDefinition beanDefinition = beanDefinitions.get(beanId);
+    if (beanDefinition == null) {
+      throw new NoSuchBeanDefinitionException("Bean is not defined: " + beanId);
+    }
+    return createBean(beanDefinition);
+  }
+
+  @VisibleForTesting
+  protected Object createBean(BeanDefinition beanDefinition) {
+    if (beanDefinition.isSingleton() && singletonObjects.contains(beanDefinition.getId())) {
+      return singletonObjects.get(beanDefinition.getId());
+    }
+
+    Object bean = null;
+    try {
+      Class beanClass = Class.forName(beanDefinition.getClassName());
+      List<BeanDefinition.ConstructorArg> args = beanDefinition.getConstructorArgs();
+      if (args.isEmpty()) {
+        bean = beanClass.newInstance();
+      } else {
+        Class[] argClasses = new Class[args.size()];
+        Object[] argObjects = new Object[args.size()];
+        for (int i = 0; i < args.size(); ++i) {
+          BeanDefinition.ConstructorArg arg = args.get(i);
+          if (!arg.getIsRef()) {
+            argClasses[i] = arg.getType();
+            argObjects[i] = arg.getArg();
+          } else {
+            BeanDefinition refBeanDefinition = beanDefinitions.get(arg.getArg());
+            if (refBeanDefinition == null) {
+              throw new NoSuchBeanDefinitionException("Bean is not defined: " + arg.getArg());
+            }
+            argClasses[i] = Class.forName(refBeanDefinition.getClassName());
+            argObjects[i] = createBean(refBeanDefinition);
+          }
+        }
+        bean = beanClass.getConstructor(argClasses).newInstance(argObjects);
+      }
+    } catch (ClassNotFoundException | IllegalAccessException
+            | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+      throw new BeanCreationFailureException("", e);
+    }
+
+    if (bean != null && beanDefinition.isSingleton()) {
+      singletonObjects.putIfAbsent(beanDefinition.getId(), bean);
+      return singletonObjects.get(beanDefinition.getId());
+    }
+    return bean;
+  }
+}
+
+spring源码：
+基本就是Spring源码大体原型了，委托的BeanFactory在Spring源码里是DefaultListableBeanFactory。
+循环依赖解决是三级缓存，提前暴露还没有初始化结束的bean。
+检测是Map存一下过程，aba这样顺序判断，有重复（a出现两次）就是环了。
+
+三级缓存源码对应
+org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton
+
+/**
+* Return the (raw) singleton object registered under the given name.
+* <p>Checks already instantiated singletons and also allows for an early
+* reference to a currently created singleton (resolving a circular reference).
+* @param beanName the name of the bean to look for
+* @param allowEarlyReference whether early references should be created or not
+* @return the registered singleton object, or {@code null} if none found
+*/
+@Nullable
+protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+Object singletonObject = this.singletonObjects.get(beanName);
+if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+synchronized (this.singletonObjects) {
+singletonObject = this.earlySingletonObjects.get(beanName);
+if (singletonObject == null && allowEarlyReference) {
+ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+if (singletonFactory != null) {
+singletonObject = singletonFactory.getObject();
+this.earlySingletonObjects.put(beanName, singletonObject);
+this.singletonFactories.remove(beanName);
+}
+}
+}
+}
+return singletonObject;
+}
+可以做递归的深度控制
+
+
+/** Cache of singleton objects: bean name to bean instance. */
+private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
+
+/** Cache of singleton factories: bean name to ObjectFactory. */
+private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
+
+/** Cache of early singleton objects: bean name to bean instance. */
+private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
+
+renew
+工厂模式与DI容器
+1、DI容器相当于一个大的工厂类,负责在程序启动,根据配置参数将所需要的对象都创建好,当程序需要时,直接从容器中获取某类对象;
+2、工厂类只负责创建某一个或某一组类对象,而DI容器是创建整个应用所有需要的类对象
+DI容器的基本功能
+1、读取配置文件:配置文件中包含要创建的类对象及创建类对象的必要信息(使用那个构造函数及构造函数的参数列表);
+2、创建对象:利用反射机制,动态加载类、创建对象;
+3、对象生命周期管理:每次获取都返回新创建的对象(prototype)和每次获取都返回同一个事先创建好的对象(singleton,即单例对象),
+在单例对象中,还区分是否在程序启动时创建还是需要时创建(init-lazy);
+DI容器接口设计
+1、BeanConfigParser:解析配置文件
+2、BeanFactory:根据解析配置的结果来创建对象;
+1、ApplicationContext:DI容器内的上帝类(组装BeanFactory和ConfigParser),也是对外的接口;

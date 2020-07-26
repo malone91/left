@@ -1,0 +1,86 @@
+抽象工厂接口，应该包含所有的产品创建的抽象方法，
+我们可以定义实现不止一个接口，一个工厂也可以生产不止一种产品类，
+和工厂方法模式一样，抽象工厂模式同样实现了开发封闭原则
+
+让一个工厂负责创建多个不同类型的对象
+
+极客时间例子如下：
+
+public interface IConfigParserFactory {
+  IRuleConfigParser createRuleParser();
+  ISystemConfigParser createSystemParser();
+  //此处可以扩展新的parser类型，比如IBizConfigParser
+}
+
+public class JsonConfigParserFactory implements IConfigParserFactory {
+  @Override
+  public IRuleConfigParser createRuleParser() {
+    return new JsonRuleConfigParser();
+  }
+
+  @Override
+  public ISystemConfigParser createSystemParser() {
+    return new JsonSystemConfigParser();
+  }
+}
+
+public class XmlConfigParserFactory implements IConfigParserFactory {
+  @Override
+  public IRuleConfigParser createRuleParser() {
+    return new XmlRuleConfigParser();
+  }
+
+  @Override
+  public ISystemConfigParser createSystemParser() {
+    return new XmlSystemConfigParser();
+  }
+}
+
+// 省略YamlConfigParserFactory和PropertiesConfigParserFactory代码
+
+网络的例子如下：
+public interface Gift {
+
+    String getGiftName();
+
+}
+public class GiftA implements Gift {
+    @Override
+    public String getGiftName() {
+        return "GiftA";
+    }
+}
+public interface IFactory {
+
+    Product createProduct();
+    Gift createGift();
+}
+
+public class FactoryA implements IFactory {
+    @Override
+    public Gift createGift() {
+        return new GiftA();
+    }
+
+    @Override
+    public Product createProduct() {
+        return new ProductA();
+    }
+}
+IFactory factoryA = new FactoryA();
+Product productA = factoryA.createProduct();
+Gift giftA = factoryA.createGift();
+
+总结：
+这个代码块的逻辑过于复杂，剥离之后能让代码更加清晰，更加可读、可维护
+基于这个设计思想，当对象的创建逻辑比较复杂，不只是简单的 new 一下就可以，
+而是要组合其他类对象，做各种初始化操作的时候，我们推荐使用工厂方法模式，
+将复杂的创建逻辑拆分到多个工厂类中，让每个工厂类都不至于过于复杂。
+而使用简单工厂模式，将所有的创建逻辑都放到一个工厂类中，会导致这个工厂类变得很复杂。
+除此之外，在某些场景下，如果对象不可复用，那工厂类每次都要返回不同的对象。
+如果我们使用简单工厂模式来实现，就只能选择第一种包含 if 分支逻辑的实现方式。
+如果我们还想避免烦人的 if-else 分支逻辑，这个时候，我们就推荐使用工厂方法模式。
+
+简单工厂模式还叫作静态工厂方法模式（Static Factory Method Pattern）。
+之所以叫静态工厂方法模式，是因为其中创建对象的方法是静态的
+应该是因为初始化放到map里，在类加载的时候需要将对象放入进去
