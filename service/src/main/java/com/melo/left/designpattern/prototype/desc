@@ -1,0 +1,39 @@
+跟具体某一语言的语法机制无关，而是通过一个 clone 散列表的例子带你搞清楚：
+原型模式的应用场景，以及它的两种实现方式：深拷贝和浅拷贝
+
+对象的得到需要成本：
+如果对象中的数据需要经过复杂的计算才能得到（比如排序、计算哈希值），
+或者需要从 RPC、网络、数据库、文件系统等非常慢速的 IO 中读取，
+这种情况下，我们就可以利用原型模式，从其他已有对象中直接拷贝得到，
+而不用每次在创建新对象的时候，都重复执行这些耗时的操作。
+
+任何时刻，系统 A 中的所有数据都必须是同一个版本的，要么都是版本 a，
+要么都是版本 b，不能有的是版本 a，有的是版本 b。
+那刚刚的更新方式就不能满足这个要求了。除此之外，我们还要求：
+在更新内存数据的时候，系统 A 不能处于不可用状态，也就是不能停机更新数据。
+
+我们把正在使用的数据的版本定义为“服务版本”，当我们要更新内存中的数据的时候，
+我们并不是直接在服务版本（假设是版本 a 数据）上更新，
+而是重新创建另一个版本数据（假设是版本 b 数据），等新的版本数据建好之后，
+再一次性地将服务版本从版本 a 切换到版本 b。
+这样既保证了数据一直可用，又避免了中间状态的存在。
+
+
+public Object deepCopy(Object object) {
+  ByteArrayOutputStream bo = new ByteArrayOutputStream();
+  ObjectOutputStream oo = new ObjectOutputStream(bo);
+  oo.writeObject(object);
+
+  ByteArrayInputStream bi = new ByteArrayInputStream(bo.toByteArray());
+  ObjectInputStream oi = new ObjectInputStream(bi);
+
+  return oi.readObject();
+}
+
+如果对象的创建成本比较大，而同一个类的不同对象之间差别不大（大部分字段都相同），
+在这种情况下，我们可以利用对已有对象（原型）进行复制（或者叫拷贝）的方式，
+来创建新对象，以达到节省创建时间的目的。
+
+从数据库中查询大于某个时间戳的
+
+BeanUtils
