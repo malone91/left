@@ -1,0 +1,89 @@
+模板、策略、职责链这三种模式具有相同的作用：复用和扩展，特别是在框架开发过程中，可以利用他们来提供
+框架的扩展点，在不修改框架源码的情况下，基于扩展点定制化框架的功能。
+
+Avoid coupling the sender of a request to its receiver by giving more than one object a chance to handle the request.
+Chain the receiving objects and pass the request along the chain until an object handles it.
+
+将 请求 的 发送 和 接收 解耦，让多个接收对象都有机会处理这个请求，将这些对象串成一条链，并沿着这条链传递这个请求，直到链上
+的某个接收对象能够处理它位置。
+
+在职责链模式中，多个处理器（也就是刚刚定义中说的“接收对象”）依次处理同一个请求。
+一个请求先经过 A 处理器处理，然后再把请求传递给 B 处理器，B 处理器处理完后再传递给 C 处理器，以此类推，形成一个链条。
+链条上的每个处理器各自承担各自的处理职责，所以叫作职责链模式。
+
+职责链的两种方式：
+Handler 是所有处理器类的抽象父类，handle() 是抽象方法。每个具体的处理器类（HandlerA、HandlerB）的 handle() 函数的代码结构类似，
+如果它能处理该请求，就不继续往下传递；如果不能处理，则交由后面的处理器来处理（也就是调用 successor.handle()）。
+HandlerChain 是处理器链，从数据结构的角度来看，它就是一个记录了链头、链尾的链表。其中，记录链尾是为了方便添加处理器。
+
+
+public abstract class Handler {
+  protected Handler successor = null;
+
+  public void setSuccessor(Handler successor) {
+    this.successor = successor;
+  }
+
+  public final void handle() {
+    boolean handled = doHandle();
+    if (successor != null && !handled) {
+      successor.handle();
+    }
+  }
+
+  protected abstract boolean doHandle();
+}
+
+public class HandlerA extends Handler {
+  @Override
+  protected boolean doHandle() {
+    boolean handled = false;
+    //...
+    return handled;
+  }
+}
+
+public class HandlerB extends Handler {
+  @Override
+  protected boolean doHandle() {
+    boolean handled = false;
+    //...
+    return handled;
+  }
+}
+
+// HandlerChain和Application代码不变
+
+public class HandlerChain {
+  private Handler head = null;
+  private Handler tail = null;
+
+  public void addHandler(Handler handler) {
+    handler.setSuccessor(null);
+
+    if (head == null) {
+      head = handler;
+      tail = handler;
+      return;
+    }
+
+    tail.setSuccessor(handler);
+    tail = handler;
+  }
+
+  public void handle() {
+    if (head != null) {
+      head.handle();
+    }
+  }
+}
+
+// 使用举例
+public class Application {
+  public static void main(String[] args) {
+    HandlerChain chain = new HandlerChain();
+    chain.addHandler(new HandlerA());
+    chain.addHandler(new HandlerB());
+    chain.handle();
+  }
+}
