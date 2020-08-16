@@ -1,0 +1,92 @@
+学习的方式：
+注重预习，预习和查看
+
+效果：达到职业顶尖水平
+
+异类 Outliers
+如果想要精通任何一个领域，主要是三步走的方式：
+1、切碎知识点 Chunk IT up
+2、刻意练习
+3、反馈 主动和被动
+
+任何领域的知识都是一棵树
+每一个区域的刻意练习
+
+一维数据结构 array link stack queue deque set map
+二维数据结构 tree graph 高级：二叉搜索树：红黑，AVL.HEAP 并查集disjoint set 字典树Trie
+特殊数据结构 bit Bloom LRU Cache
+
+algo
+branch： if-else, switch
+iteration： for, while
+recursive: divide/conquer, back-trace
+search: DFS, BFS, A*
+dynamic programing
+binary search
+greedy
+Math Geometry
+
+在头脑中回忆每种算法的思想和代码模板
+所有的就是 找重复单元
+
+刻意练习：基本功
+基础动作的分解和反复练习
+最大误区就是只做一遍
+
+刻意练习：过遍数，五遍刷题法
+练习弱项，缺陷地方，不舒服不爽是在成长
+练得好就是你的舒适区，一只脚踏在舒适区之外
+
+大量反复练习，练习基本功，基本功练习好之后，才会体会到这些题目在真正的现实中，比如工程化的时候应该怎么弄。
+克服一些理解上的误区，枯燥的练习，基本功
+
+反馈：
+主动学习别人写的代码
+高手指点 code review，知道怎么去提高
+
+刷题的技巧：
+五遍刷题法
+四步系统化思考的方式：
+Clarification多看几次题目，反复沟通，看清楚题目
+Possible solutions 想所有可能的解法先过一遍，时空复杂度，找出最优的解法
+Coding
+Test Case
+
+五毒：
+1、5分钟读题和思考，最多15分钟，不要纠结
+直接看解法，理解和学习利用一个算法，而不是去发明和创造。比较不同解法的优劣，每个解法背诵和默写
+背诵和默写很重要，需要反复很多遍才会理解
+
+2、马上自己写，闭卷
+提交修改，LeetCode上通过，比较执行时间
+
+3、过了24小时后，再重复做
+
+4、过了一周之后，再做一次
+
+5、提前练习
+至少写五遍
+ctrl <>单词的切分
+ctrl delete
+shift ctrl <>
+fadffdsf.test
+
+自顶向下的编程方式写：思考大层次，而不是细节以主干逻辑为主
+
+y=n*(n+1)/2
+clean code
+
+递归树
+int fib(int n) {
+    if (n < 2) return n;
+    return fib(n - 1) + fib(n - 2);
+}
+2的n次方
+f(6)的左子树是f(5),右子树是f(4)，以此类推
+节点数也就是执行次数都是按指数级递增的
+
+工程问题就是质量和效率
+
+走错路基本是认知问题
+
+客观规律决定了能力的培养需要自身去练习
