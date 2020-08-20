@@ -1,0 +1,23 @@
+配置总线
+统一配置模型
+相当于是一个契约
+
+灵活的可扩展的契约
+URL作为上下文传递数据的信息
+
+URL作用就是与Adaptive注解一起选择合适的扩展类，适配器方法
+
+OCP原则 对修改关闭对扩展开放，dubbo采用微内核加插件架构
+内核文档只负责管理插件的生命周期，不会因为系统的扩展而不断进行修改
+
+微内核通常采用IOC Factory OSGI
+dubbo最终采用SPI机制来加载插件
+
+ServiceLoader，获取当前线程绑定的classloader
+dubbo自己搞了一个spi
+SPI会将所有类实例化，会生成不必要的对象
+DUBBO解决了上述资源浪费的问题，对配置文件扩展和修改
+dubbo将配置文件改为了kv模式 dubbo=....DubboProtocol
+services，dubbo，dubbo/internal
+
+ExtensionLoader
