@@ -8,6 +8,7 @@ public class ZeroMovementDemo {
         int[] arr = {3, 0, 4, 5, 0, 9, 7};
         moveZeros(arr, arr.length);
         System.out.println(Arrays.toString(arr));
+        System.out.println(1 << 3);
     }
 
     private static void moveZeros(int[] a, int n) {
