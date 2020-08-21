@@ -90,7 +90,7 @@ public class LRUBasedArray<T> {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < value.length; i++) {
+        for (int i = 0; i < count; i++) {
             sb.append(value[i]).append(" ");
         }
         return sb.toString();
