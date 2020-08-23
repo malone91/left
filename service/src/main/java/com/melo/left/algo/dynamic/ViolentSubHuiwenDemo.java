@@ -17,7 +17,7 @@ public class ViolentSubHuiwenDemo {
         int maxLen = 1;
         for (int i = 0; i < len - 1; i++) {
             for (int j = i + 1; j < len; j++) {
-                if (j - i + 1 > maxLen && deduceHuiWen(chars, i, jgi)) {
+                if (j - i + 1 > maxLen && deduceHuiWen(chars, i, j)) {
                     maxLen = j - i + 1;
                     begin = i;
                 }
