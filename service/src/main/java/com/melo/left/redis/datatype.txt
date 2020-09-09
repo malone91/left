@@ -1,0 +1,6 @@
+string SDS 简单动态字符串 free, len, char[] 结尾\0，可以重用c原生函数
+list 双向链表、压缩列表
+hash 压缩列表、哈希表git pull
+
+sorted set 压缩列表、跳表
+set 哈希表、整数数组
