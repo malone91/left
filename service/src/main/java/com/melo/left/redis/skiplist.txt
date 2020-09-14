@@ -1,0 +1,18 @@
+typedef struct zskiplist {
+    header;
+    tail;
+    level;
+    length;
+}
+
+typedef struct zskiplistNode {
+    struct zskiplistNode *backward;
+    double score;
+    robj *obj;
+
+    //layer
+    struct zskiplistLevel {
+        struct zskiplistNode *forward;
+        unsigned int span;
+    } level[];
+} zskiplistNode;
