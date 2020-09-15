@@ -1,0 +1,31 @@
+整数集合 intset是集合键的底层实现之一
+intset底层实现为数组
+
+当一个集合只包含整数值元素，并且集合的数量不多时，redis就会使用整数集合作为集合键的底层实现
+sadd numbers 2 4 3 1
+smembers numbers    -> 1 2 3 4
+object encoding numbers  -> intset
+
+typedef struct intset {
+    unit32_t encoding;//编码方式，值：INTSET_ENC_INT16 -32768-32767, INTSET_ENC_INT32 , INTSET_ENC_INT64
+    unit32_t length;//包含元素数量
+    int8_t contents[];//保存元素的数组
+} intset;
+无重复，从小到大有序排列、content数组类型取决于encoding属性的值
+
+eg:
+intset
+encoding INTSET_END_INT16
+length 5
+contents -6370 -5 18 233 14632
+contents数组的大小是 16*5=80位
+
+intset的升级 如果向int16_t类型数组添加int64类型的，整数集合contents数组保存的整数值都是int64类型的
+整数集合重新分配+1的空间  元素转换 添加新元素 有序性不变
+升级时间复杂度N
+
+升级好处：提升整数集合灵活性，尽可能节约内存
+不必担心C语言静态类型语言下的类型错误
+确保升级在需要的时候进行
+
+intset不支持降级，一旦对数组进行了升级，编码就会一直保持升级后的状态，删除了元素也不会降级

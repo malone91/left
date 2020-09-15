@@ -16,3 +16,15 @@ typedef struct zskiplistNode {
         unsigned int span;
     } level[];
 } zskiplistNode;
+
+typedef struct zskiplist {
+    struct zskiplistNode *header, *tail;
+    unsigned long length;
+    int level;
+} zskiplist
+
+zrange zskip 0 2 withscore
+span记录两个节点之间的距离，可用于计算排名
+每个跳跃点节点的层高都是1-32之间的随机数
+在同一个跳跃表中，多个节点可以包含相同的分支，但每个节点的成员对象必须是唯一的。
+跳跃表节点按分值大小进行排序，分值相同时，节点按成员对象大小排序。

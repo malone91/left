@@ -1,0 +1,34 @@
+redis主要的数据结构，SDS，双端链表，字段，压缩列表，整数集合，
+但是redis并没有直接使用这些数据结构来实现键值对数据库，而是基于这些结构构建了一个对象系统
+包含字符串对象，哈希对象，列表对象，集合对象，有序集合对象
+
+redis在执行命令之前，可以根据对象的类型判断对象是否可以执行给定的命令
+
+对象好处：在不同场景下为对象设置不同的数据结构实现，优化使用效率
+
+redis对象系统基于 引用计数技术 的内存回收机制 和 对象共享机制， 可以让多个数据库共享一个对象节约内存
+redis对象带有访问时间记录信息，用于计算数据库键的空转时长 启动maxmemory下，空转时长长的键可能会优先被服务器删除
+
+redis使用对象来表示DB的key与value 至少创建2个对象，key value
+
+typedef struct redisObject {
+    unsigned type:4; REDIS_STRING REDIS_LIST REDIS_HASH REDIS_SET REDIS_ZSET
+    unsigned encoding:4;
+    void *ptr;//指向底层实现数据结构的指针
+    ...
+} robj;
+
+键总是一个字符串对象
+字符串键 指的是值 type key
+
+每种类型的对象都至少使用了2种不同的编码
+
+raw sds
+
+列表对象：压缩列表，更容易载入到缓存节约内存  数量<=512,长度<=64byte
+          双端链表 大量元素，功能更强 linkedlist
+
+字符串对象：int raw embstr:保存短字符串，分配释放一次，连续内存
+int->raw  append num " aaa"
+embstr->raw 先转编码，再执行修改命令
+
