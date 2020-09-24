@@ -116,5 +116,12 @@
             <version>1.18.8</version>
         </dependency>
 
+        <!-- collections -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.3</version>
+        </dependency>
+
     </dependencies>
 </project>
