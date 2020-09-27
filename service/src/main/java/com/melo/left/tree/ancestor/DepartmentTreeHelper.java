@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 public class DepartmentTreeHelper {
 
-    public static ImDepartmentVo transfrTreeFromList(List<ImDepartmentVo> list) {
+    public static ImDepartmentVo transferTreeFromList(List<ImDepartmentVo> list) {
         if (CollectionUtils.isEmpty(list)) {
             return null;
         }
@@ -42,10 +42,48 @@ public class DepartmentTreeHelper {
             if (Objects.equals(ancestor.getOrgNo(), ele.getParentOrgNo())) {
                 level2.add(ele);
             }
+
+            String departmentUrl = findDepartmentUrl(list, ele);
+            System.out.println(departmentUrl);
         }
         ancestor.setChilds(level2);
 
         return ancestor;
+    }
+
+    public static String findDepartmentUrl(List<ImDepartmentVo> list, ImDepartmentVo currentDepartment) {
+        if (CollectionUtils.isEmpty(list) || currentDepartment == null) {
+            return null;
+        }
+        //按orgNo主键分组构建map集合，key为orgNo，value是list size=1的集合，当前orgNo对应的部门对象
+        Map<String, List<ImDepartmentVo>> allMap = list.stream().collect(Collectors.groupingBy(ImDepartmentVo::getOrgNo));
+        //根据orgNo拿到父节点parentOrgNo，在while中不断拿到  构建list存储上一级节点，list为有序集合
+        List<String> parentMore = new ArrayList<>();
+        //当前节点不是根节点部门
+        String orgNo = currentDepartment.getOrgNo();
+        while (true) {
+            List<ImDepartmentVo> imDepartmentVos = allMap.get(orgNo);
+            Assert.isTrue(imDepartmentVos.size()==1,"集合大小肯定是1");
+            ImDepartmentVo paramObject = imDepartmentVos.get(0);
+            String parentOrgNo = paramObject.getParentOrgNo();
+            //如果当前节点为最顶层节点跳出while循环
+            if (parentOrgNo == null) {
+                break;
+            }
+            parentMore.add(parentOrgNo);
+
+            orgNo = parentOrgNo;
+        }
+        //将集合反转顺序
+        Collections.reverse(parentMore);
+        StringBuilder builder = new StringBuilder();
+        builder.append("/");
+        for (String num : parentMore) {
+            builder.append(num).append("/");
+        }
+        //添加自身节点
+        builder.append(currentDepartment.getOrgNo());
+        return builder.toString();
     }
 
     public static void main(String[] args) {
@@ -94,6 +132,6 @@ public class DepartmentTreeHelper {
         list.add(g_n);
         list.add(h_n);
 
-        System.out.println("最顶层节点是" + transfrTreeFromList(list).getOrgNo());
+        System.out.println("最顶层节点是" + transferTreeFromList(list).getOrgNo());
     }
 }
