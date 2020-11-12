@@ -1,0 +1,60 @@
+硬：
+spring循环依赖描述和解决方案
+事务隔离级别
+bean生命周期和作用域
+mvc和spring容器
+beanfactory和factorybean区别
+怎么实现可重复读的，如何保证一致性
+mysql有哪些日志，如何做数据同步
+介绍一下索引
+mysql有哪些锁
+mysql字节大小问题
+sql优化方案
+B+树结构
+join联表原理
+突然不走索引了，为什么？
+redis雪崩，击穿，穿透，解决方案
+redis分布式，槽
+redis有哪些优化，比如string，hash
+redis有哪些数据结构，redis内部数据结构
+redis应用场景 gossip协议
+jvm默认垃圾回收器，回收算法，回收过程jvm调优经验，各种gc过程，默认gc
+加载机制，破坏双亲委派
+介绍一下HTTP的头有哪些参数
+mybatis一级、二级、三级缓存
+springboot的启动过程，与spring的区别
+dubbo原理
+dubbo序列化方式
+dubbo负载均衡策略
+dubbo是什么？
+微服务的理解，springcloud是什么？
+mongo索引
+实现一个跳表
+链表 各种排序
+层序遍历，前中后序遍历
+动态规划，回文串，中心扩展法
+tcp与udp区别
+HTTP HTTPS HTTP3 HTTP2
+介绍一下netty
+mq介绍一下原理，消息如何不丢失
+select，poll，epoll区别
+springboot如何读取各个环境的
+线程池的原理
+线程池的一个线程抛出异常怎么办
+并发包
+说一下AQS
+锁
+happen-before原则
+设计模式
+线程的状态
+string stringbuffer stringbuilder区别
+aop原理
+hashmap和concurrentHashMap源码 hashmap默认大小，初始化大小是多少/
+java并行流的原理
+监控服务器CPU 内存 磁盘 IO的命令
+linux命令，日志分析关键字出现次数
+手写一个cron
+拦截器、过滤器区别
+zk分布式协议
+
+软：职业规划，为什么离职，期待薪资，如何学习
