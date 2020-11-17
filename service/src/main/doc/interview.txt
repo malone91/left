@@ -19,7 +19,8 @@ redis有哪些优化，比如string，hash
 redis有哪些数据结构，redis内部数据结构
 redis应用场景 gossip协议
 jvm默认垃圾回收器，回收算法，回收过程jvm调优经验，各种gc过程，默认gc
-加载机制，破坏双亲委派
+加载机制，破坏双亲委派 普通的对象会被分配到TLAB上
+字节码操纵技术:ASM Javassist cglib 字节码到Java对象的转换
 介绍一下HTTP的头有哪些参数
 mybatis一级、二级、三级缓存
 springboot的启动过程，与spring的区别
