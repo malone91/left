@@ -42,6 +42,7 @@ select，poll，epoll区别
 springboot如何读取各个环境的
 线程池的原理
 线程池的一个线程抛出异常怎么办
+ThreadLocal源码
 并发包
 说一下AQS
 锁
