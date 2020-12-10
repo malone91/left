@@ -1,5 +1,12 @@
 package com.melo.left.concurrent;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 public class DeadLockSample extends Thread {
 
     private String first;
@@ -21,6 +28,22 @@ public class DeadLockSample extends Thread {
     }
 
     public static void main(String[] args) throws InterruptedException {
+        //detect dead lock
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+        Runnable dlCheck = () -> {
+            long[] deadlockedThreads = mxBean.findDeadlockedThreads();
+            if (deadlockedThreads != null) {
+                ThreadInfo[] threadInfo = mxBean.getThreadInfo(deadlockedThreads);
+                System.out.println("detect dead lock threads");
+                for (ThreadInfo info : threadInfo) {
+                    System.out.println(info.getThreadName());
+                }
+            }
+        };
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        // 稍等5秒，然后每10秒进行一次死锁扫描
+        scheduler.scheduleAtFixedRate(dlCheck, 5L, 10L, TimeUnit.SECONDS);
+        //get current process id
         String lockA = "lockA";
         String lockB = "lockB";
         DeadLockSample sample1 = new DeadLockSample(lockA, lockB);
