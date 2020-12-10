@@ -28,6 +28,8 @@ public class DeadLockSample extends Thread {
     }
 
     public static void main(String[] args) throws InterruptedException {
+        String name = ManagementFactory.getRuntimeMXBean().getName();
+        System.out.println(name);
         //detect dead lock
         ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
         Runnable dlCheck = () -> {
