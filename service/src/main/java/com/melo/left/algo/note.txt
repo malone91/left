@@ -1,0 +1,56 @@
+数据的存储方式只有两种 数组和链表，这是结构基础
+数组实现，处理扩容缩容的问题；链表实现，不担心这个问题，但是需要更多的内存空间存储节点指针
+邻接表就是链表，邻接矩阵就是二维数组，矩阵判断连通性迅速；邻接表省空间，操作效率比不上邻接矩阵
+散列表就是通过散列函数把键映射到一个大数组里；解决散列冲突问题一个是拉链法，一个是线性探查法，需要数组特性，连续寻址
+散列函数  SHA CRC MD5
+
+线性遍历，非线性遍历 for/while；递归
+void traverse(int[] arr) {
+    for (int i = 0; i < arr.length; i++) {
+    // 迭代访问 arr[i]
+    }
+}
+/* 基本的单链表节点 */
+class ListNode {
+    int val;
+    ListNode next;
+}
+void traverse(ListNode head) {
+    for (ListNode p = head; p != null; p = p.next) {
+    // 迭代访问 p.val
+}
+}
+void traverse(ListNode head) {
+    // 递归访问 head.val
+    traverse(head.next)
+}
+/* 基本的⼆叉树节点 */
+class TreeNode {
+int val;
+TreeNode left, right;
+}
+void traverse(TreeNode root) {
+traverse(root.left)
+traverse(root.right)
+}
+
+/* 基本的 N 叉树节点 */
+class TreeNode {
+int val;
+TreeNode[] children;
+}
+void traverse(TreeNode root) {
+for (TreeNode child : root.children)
+traverse(child)
+}
+N 叉树的遍历⼜可以扩展为图的遍历，因为图就是好⼏ N 叉棵树的结合体。
+
+二叉树是最容易培养框架思维的，大部分算法技巧本质上都是树的遍历问题
+框架代码如下：
+void traverse(TreeNode root) {
+    //前序遍历
+    traverse(root.left)
+    //中序遍历
+    traverse(root.right)
+    //后序遍历
+}
