@@ -1,0 +1,369 @@
+1、<select id="selectNewestContract" resultMap="contractBuyOrgResultMap" parameterType="java.lang.String">
+        SELECT
+        SUPP_CODE,
+        BUYORG_CODE,
+        BRAND_CODE,
+        CLASS_CODE,
+        any_value(CONCAT(SUPP_CODE,'_',BUYORG_CODE,'_',BRAND_CODE)) AS CONCAT_KEY
+        FROM
+        md_ab
+        WHERE
+        IS_REMOVED = '0' AND CONTRACT_CODE = #{contractCode,jdbcType=VARCHAR}
+        GROUP BY
+        SUPP_CODE,
+        BUYORG_CODE,
+        BRAND_CODE,
+        CLASS_CODE
+        UNION
+        SELECT
+        SUPP_CODE,
+        BUYORG_CODE,
+        BRAND_CODE,
+        CLASS_CODE,
+        CONCAT(SUPP_CODE,'_',BUYORG_CODE,'_',BRAND_CODE) AS CONCAT_KEY
+        FROM
+        md_contract_info
+        WHERE
+        IS_REMOVED = '0' AND CONTRACT_CODE = #{contractCode,jdbcType=VARCHAR}
+        GROUP BY
+        SUPP_CODE,
+        BUYORG_CODE,
+        BRAND_CODE,
+        CLASS_CODE
+    </select>
+	
+2、			param.setBranchList(new ArrayList<>(viewableBranchCodes));
+            List<List<?>> list = supplementMapper.queryToSupplementContract(param);
+            List<?> objects = list.get(0);
+            result.setList((List<LeasingHistoryResult>) objects);
+            result.setTotalCount((Long) list.get(1).get(0));
+			
+			List<List<?>> queryToSupplementContract(LeasingHistoryParam param);
+			
+			<resultMap id="ToSupplementContractMap" type="com.gome.scot.dcs.leasinghistorysupplement.dto.LeasingHistoryResult"
+               autoMapping="true"/>
+
+			<resultMap id="FoundRowsMap" type="long" autoMapping="true"/>
+
+			<select id="queryToSupplementContract" resultMap="ToSupplementContractMap,FoundRowsMap">
+				select
+				SQL_CALC_FOUND_ROWS
+				CODE as contractCode, CONTRACT_NAME as contractName
+				from
+				dcs_leasing_contract
+				where
+				IDENTIFY_TAG = #{dataType}
+				and IS_REMOVED = 0
+				<if test="codeOrName != null and codeOrName != ''">
+					and (CODE like concat('%', #{codeOrName}, '%') or CONTRACT_NAME like concat('%', #{codeOrName},
+					'%'))
+				</if>
+				and branch_code in
+				<foreach collection="branchList" item="branch" open="(" close=")" separator=",">
+					#{branch}
+				</foreach>
+				limit #{offset},#{pageSize};
+				SELECT found_rows();
+			</select>
+			
+3、redis to many connections
+4、for update 加行锁
+5、mongo批量添加
+	@GetMapping("test")
+    public String test() {
+        BulkOperations bulkOperations = mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, ContractTypeFilingEnum.AlliedShop.getCollectionName());
+        Update update1 = new Update();
+        update1.set("aa", "a");
+        bulkOperations.updateOne(new Query(Criteria.where("_id").is("5ee3737df4520ef53400fcc")), update1);
+        Update update2 = new Update();
+        update2.set("bb", "b");
+        bulkOperations.updateOne(new Query(Criteria.where("_id").is("5ee3737df4520ef53400fcc")), update2);
+        bulkOperations.execute();
+        return "done";
+    }
+6、select * from t1 straight_join t2 on (t1.a=t2.a);
+7、select name, 
+		 CASE sex 
+			 WHEN '1' THEN '男' 
+			 WHEN '2' THEN '女' 
+			 ELSE '其他'
+		 END 
+8、异步查询数据库
+9、CAS范式
+do {
+  // 获取当前值
+  oldV = xxxx；
+  // 根据当前值计算新值
+  newV = ...oldV...
+}while(!compareAndSet(oldV,newV);
+10.
+csv_headers = ['name', 'type', 'user_id', 'user_name', 'state', 'contract_num']
+rows = []
+with open("json.txt", "r", encoding='UTF-8') as json_file:
+    data = json.load(json_file)
+    for info in data:
+        rows.append([
+            info.get('contractName'),
+            info.get('identifyTag'),
+            info.get('requester'),
+            info.get('requesterName'),
+            info.get('stateName'),
+            info.get('contractNum')
+        ])
+fileName = 'test.csv'
+with open(fileName, 'w', newline='') as f:
+    f_csv = csv.writer(f)
+    f_csv.writerow(csv_headers)
+    f_csv.writerows(rows)
+11、SELECT
+	*
+FROM
+	dcs_alliance_bangke_project
+INNER JOIN (
+	SELECT
+MAX(id) AS maxId
+	FROM
+		dcs_alliance_bangke_project
+	WHERE
+		AD_ACCOUNT = 'fujinluan'  AND IS_REMOVED = 0 AND FINISHED = 0
+	GROUP BY
+		PROJECT_NUM
+) temp_result ON dcs_alliance_bangke_project.ID = temp_result.maxId
+
+12、Extra 这个字段中的“Using filesort”表示的就是需要排序，MySQL 会给每个线程分配一块内存用于排序，称为 sort_buffer。sort_buffer_size
+
+全字段排序 VS rowid 排序
+如果内存够，就要多利用内存，尽量减少磁盘访问。对于 InnoDB 表来说，rowid 排序会要求回表多造成磁盘读，因此不会被优先选择
+
+一个事务的 binlog 是有完整格式的：statement 格式的 binlog，最后会有 COMMIT；
+row 格式的 binlog，最后会有一个 XID event。
+
+binlog没有能力恢复数据页
+
+InnoDB使用的 WAL技术，如果redo log太小，这个WAL机制的能力就发挥不出来了。4个文件，每个1G即可
+
+
+在一个事务的更新过程中，日志是要写多次的。比如下面这个事务：begin;insert into t1 ...insert into t2 ...commit;这个事务要往两个表中插入记录，插入数据的过程中，生成的日志都得先保存起来，但又不能在还没 commit 的时候就直接写到 redo log 文件里。所以，redo log buffer 就是一块内存，用来先存 redo 日志的。也就是说，在执行第一个 insert 的时候，数据的内存被修改了，redo log buffer 也写入了日志。但是，真正把日志写到 redo log 文件（文件名是 ib_logfile+ 数字），是在执行 commit 语句的时候做的。
+这里说的是事务执行过程中不会“主动去刷盘”，以减少不必要的 IO 消耗。但是可能会出现“被动写入磁盘”，比如内存不够、其他事务提交等情况
+
+一般的读都是快照读了
+
+我们并不需要拷贝出这 100G 的数据。我们先来看看这个快照是怎么实现的。InnoDB 里面每个事务有一个唯一的事务 ID，叫作 transaction id。它是在事务开始的时候向 InnoDB 的事务系统申请的，是按申请顺序严格递增的。而每行数据也都是有多个版本的。每次事务更新数据的时候，都会生成一个新的数据版本，并且把 transaction id 赋值给这个数据版本的事务 ID，记为 row trx_id。同时，旧的数据版本要保留，并且在新的数据版本中，能够有信息可以直接拿到它。也就是说，数据表中的一行记录，其实可能有多个版本 (row)，每个版本有自己的 row trx_id。
+我们并不需要拷贝出这 100G 的数据。我们先来看看这个快照是怎么实现的。InnoDB 里面每个事务有一个唯一的事务 ID，叫作 transaction id。它是在事务开始的时候向 InnoDB 的事务系统申请的，是按申请顺序严格递增的。而每行数据也都是有多个版本的。每次事务更新数据的时候，都会生成一个新的数据版本，并且把 transaction id 赋值给这个数据版本的事务 ID，记为 row trx_id。同时，旧的数据版本要保留，并且在新的数据版本中，能够有信息可以直接拿到它。也就是说，数据表中的一行记录，其实可能有多个版本 (row)，每个版本有自己的 row trx_id。
+
+按照可重复读的定义，一个事务启动的时候，能够看到所有已经提交的事务结果。但是之后，这个事务执行期间，其他事务的更新对它不可见。因此，一个事务只需要在启动的时候声明说，“以我启动的时刻为准，如果一个数据版本是在我启动之前生成的，就认；如果是我启动以后才生成的，我就不认，我必须要找到它的上一个版本”。
+
+在实现上， InnoDB 为每个事务构造了一个数组，用来保存这个事务启动瞬间，当前正在“活跃”的所有事务 ID。“活跃”指的就是，启动了但还没提交。
+
+update语句是当前读，当前读必须读最新版本
+当它要去更新数据的时候，就不能再在历史版本上更新了，否则事务 C 的更新就丢失了。因此，事务 B 此时的 set k=k+1 是在（1,2）的基础上进行的操作。所以，这里就用到了这样一条规则：更新数据都是先读后写的，而这个读，只能读当前的值，称为“当前读”（current read）。
+
+一致性读，当前读，行锁串起来
+可重复读的核心就是一致性读（consistent read）；而事务更新数据的时候，只能用当前读。
+如果当前的记录的行锁被其他事务占用的话，就需要进入锁等待。
+
+“start transaction with consistent snapshot; ”的意思是从这个语句开始，创建一个持续整个事务的一致性快照。
+所以，在读提交隔离级别下，这个用法就没意义了，等效于普通的 start transaction。
+
+回到我们文章开头的问题，普通索引和唯一索引应该怎么选择。
+其实，这两类索引在查询能力上是没差别的，主要考虑的是对更新性能的影响。所以，我建议你尽量选择普通索引。
+
+内存数据页跟磁盘数据页内容不一致的时候，我们称这个内存页为“脏页”
+
+redo-log设置小的时候，会出现，
+redo-log内存满了，不停的要刷脏页回磁盘。现象就会是发现机器io不高，但是mysql明显的卡顿。
+
+在 MySQL 8.0 版本，将自增值的变更记录在了 redo log 中，重启的时候依靠 redo log 恢复重启之前的值。
+自增主键不连续的原因：
+	二级索引的唯一键冲突
+	事务回滚
+
+insert into t values(null,1,1);
+begin;
+insert into t values(null,2,2);
+rollback;
+insert into t values(null,2,2);
+//插入的行是(3,2,2)
+这么做是为了提升性能，提高并发能力
+id是递增的，但不保证是连续的
+表里有个AUTO_INCREMENT字段
+
+SELECT * from md_agreement INNER JOIN 
+(select id from md_agreement limit 250000,10) as x using(id)
+
+小表驱动大表  NLJ 有索引的情况   index nested-loop join
+select * from t1 straight_join t2 on t1.a = t2.a   驱动表t1走全表扫描，被驱动表t2走树搜索  （a字段有普通索引）
+
+使用 join 语句，性能比强行拆成多个单表执行 SQL 语句的性能要好；如果使用 join 语句的话，需要让小表做驱动表。但是，你需要注意，这个结论的前提是“可以使用被驱动表的索引”。
+
+Simple Nested-Loop Join ： select * from t1 straight_join t2 on t1.a = t2.b    100*1000  被驱动表t2的b字段无索引
+当然，MySQL 也没有使用这个 Simple Nested-Loop Join 算法，而是使用了另一个叫作“Block Nested-Loop Join”的算法，简称 BNL。看explain：
+Using where; Using join buffer (Block Nested Loop)
+这时候，被驱动表上没有可用的索引，算法的流程是这样的：把表 t1 的数据读入线程内存 join_buffer 中，由于我们这个语句中写的是 select *，因此是把整个表 t1 放入了内存；扫描表 t2，把表 t2 中的每一行取出来，
+跟 join_buffer 中的数据做对比，满足 join 条件的，作为结果集的一部分返回。
+但是，Block Nested-Loop Join 算法的这 10 万次判断是内存操作，速度上会快很多，性能也更好。
+
+join_buffer_size 越大，一次可以放入的行越多，分成的段数也就越少，对被驱动表的全表扫描次数就越少。这就是为什么，你可能会看到一些建议告诉你，如果你的 join 语句很慢，就把 join_buffer_size 改大。
+join_buffer_size
+
+如果可以使用 Index Nested-Loop Join 算法，也就是说可以用上被驱动表上的索引，其实是没问题的；如果使用 Block Nested-Loop Join 算法，扫描行数就会过多。尤其是在大表上的 join
+操作，这样可能要扫描被驱动表很多次，会占用大量的系统资源。所以这种 join 尽量不要用。所以你在判断要不要使用 join 语句时，就是看 explain 结果里面，Extra 字段里面有没有出现“Block Nested Loop”字样。
+
+如果可以使用被驱动表的索引，join 语句还是有其优势的；不能使用被驱动表的索引，只能使用 Block Nested-Loop Join 算法，这样的语句就尽量不要使用；在使用 join 的时候，应该让小表做驱动表。
+所谓小表，就是经过查询条件过滤后的数据量小的那张表
+
+IO集中的代码多些
+
+如果驱动表分段，那么被驱动表就被多次读，而被驱动表又是大表，循环读取的间隔肯定得超1秒，这就会导致上篇文章提到的：“数据页在LRU_old的存在时间超过1秒，就会移到young区”。
+最终结果就是把大部分热点数据都淘汰了，导致“Buffer pool hit rate”命中率极低，其他请求需要读磁盘，因此系统响应变慢，大部分请求阻塞。
+
+回表是指，InnoDB 在普通索引 a 上查到主键 id 的值后，再根据一个个主键 id 的值到主键索引上去查整行数据的过程。回表是按一行行搜索主键索引的。
+
+理解了 MRR 性能提升的原理，我们就能理解 MySQL 在 5.6 版本后开始引入的 Batched Key Access(BKA) 算法了。这个 BKA 算法，其实就是对 NLJ 算法的优化。MRR顺序读
+
+BNL 算法对系统的影响主要包括三个方面：可能会多次扫描被驱动表，占用磁盘 IO 资源；判断 join 条件需要执行 M*N 次对比（M、N 分别是两张表的行数），
+如果是大表就会占用非常多的 CPU 资源；可能会导致 Buffer Pool 的热数据被淘汰，影响内存命中率。
+
+低频的sql建立索引就有些多余了
+
+临时表：
+
+create temporary table temp_t(id int primary key, a int, b int, index(b))engine=innodb;
+insert into temp_t select * from t2 where b>=1 and b<=2000;
+select * from t1 join temp_t on (t1.b=temp_t.b);
+
+幻读指的是一个事务在前后两次查询同一个范围的时候，后一次查询看到了前一次查询没有看到的行。
+
+破坏了加锁的声明
+
+间隙锁是开区间
+
+两个 session 进入互相等待状态，形成死锁
+
+#!/bin/sh
+cat aaa.txt | while read line
+do
+	echo "${line}"
+	sleep 5
+done
+
+间隙锁的引入是影响了并发度的。隔离级别设置为读提交，就没有间隙锁了。这时候，需要解决数据和日志的不一致性问题，把binlog格式改为row
+读提交隔离级别加 binlog_format=row 
+
+读提交隔离级别下，在语句执行完成后，是只有行锁的。而且语句执行完成后，InnoDB 就会把不满足条件的行行锁去掉。
+
+锁等待
+
+可重复读隔离级别下，经试验：
+SELECT * FROM t where c>=15 and c<=20 for update; 会加如下锁：
+next-key lock:(10, 15], (15, 20]
+gap lock:(20, 25)
+
+SELECT * FROM t where c>=15 and c<=20 order by c desc for update; 会加如下锁：
+next-key lock:(5, 10], (10, 15], (15, 20]
+gap lock:(20, 25)
+
+session C 被锁住的原因就是根据索引 c 逆序排序后多出的 next-key lock:(5, 10]
+
+同时我有个疑问：加不加 next-key lock:(5, 10] 好像都不会影响到 session A 可重复读的语义，那么为什么要加这个锁呢？ 代码就是这么写的
+
+lock tables t1 write, t2 read;
+unlock tables;
+
+事务中的 MDL 锁，在语句执行开始时申请，但是语句结束后并不会马上释放，而会等到整个事务提交后再释放。
+读的时候是一个MDL读锁
+
+业务文档，业务考验能力，做好也不是那么容易
+高级别晋升靠业务 低级别靠 技术
+机遇方向能力努力
+小富靠碱 大幅靠命
+
+建造者模式  静态内部类返回该对象的示例
+public class ConstructorArg {
+    private boolean isRef;
+    private Class type;
+    private Object arg;
+
+    public boolean isRef() {
+        return isRef;
+    }
+
+    public Class getType() {
+        return type;
+    }
+
+    public Object getArg() {
+        return arg;
+    }
+
+    private ConstructorArg(Builder builder) {
+        this.isRef = builder.isRef;
+        this.type = builder.type;
+        this.arg = builder.arg;
+    }
+
+    public static class Builder {
+        private boolean isRef;
+        private Class type;
+        private Object arg;
+
+        public ConstructorArg build() {
+            if(isRef && type != null) {
+                throw new IllegalArgumentException("...");
+            }
+
+            if (!isRef && type == null) {
+                throw new IllegalArgumentException("...");
+            }
+
+            if (this.isRef && (arg != null && arg.getClass() != String.class)) {
+                throw new IllegalArgumentException("...");
+            }
+
+            if (!this.isRef && arg == null) {
+                throw new IllegalArgumentException("...");
+            }
+
+            return new ConstructorArg(this);
+        }
+
+        public Builder setRef(boolean ref) {
+            if(ref && this.type != null) {
+                throw new IllegalArgumentException("...");
+            }
+            this.isRef = ref;
+            return this;
+        }
+
+        public Builder setType(Class type) {
+            if (this.isRef || type == null) {
+                throw new IllegalArgumentException("...");
+            }
+            this.type = type;
+            return this;
+        }
+
+        public Builder setArg(Object arg) {
+            if (this.isRef && (arg != null && arg.getClass() != String.class)) {
+                throw new IllegalArgumentException("...");
+            }
+
+            if (!this.isRef && arg == null) {
+                throw new IllegalArgumentException("...");
+            }
+            this.arg = arg;
+            return this;
+        }
+    }
+}
+
+默默的掏出了《spring源码深度解析》回顾一番
+ 1、构造器循环依赖
+构造器注入的循环依赖是无法解决的，只能抛出bean创建异常使容器无法启动
+如何判断是循环依赖？
+把正在创建的bean放入到一个(正在创建的map)中，如果依赖创建bean在此map中存在，则抛出异常。
+2、setter方法循环依赖
+①单例情况可以解决循环依赖，方法是提前暴露一个返回该单例的工厂方法，让依赖对象可以引用到
+②多例不能解决循环依赖，因为多例不需要缓存
+
+Spring解决循环依赖的办法是多级缓存。 多级缓存？
