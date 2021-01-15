@@ -1,0 +1,29 @@
+链表提供了高效的节点重排能力，顺序性的节点访问方式，通过增删节点灵活调整链表的长度
+
+在Redis中，列表 键 的底层实现之一就是链表，当一个列表键包含了数量多的元素，
+或者列表中包含的元素都是比较长的字符串，Redis就会使用链表作为列表键的底层实现
+数量，大小
+
+llen list : 1024
+lrange list 0 10
+列表键的底层实现就是一个链表，每个节点保存了一个整数值
+链表的场景：链表键, 发布与订阅， 慢查询， 监视器， 多个客户端状态信息， 构建客户端输出缓冲区
+output buffer
+
+typedef struct listNode {
+    struct listNode *prev;
+    struct listNode *next;
+    void *value;//节点的值
+} listNode;
+多个listNode可以通过prev和next指针组成双端链表
+但使用adlist.h/list来持有链表的话，操作起来更方便
+typedef struct list {
+    listNode *head;
+    listNode *tail;
+    unsigned long len;//链表包含的节点数量
+    void *(*dup)(void *ptr);//节点值复制函数
+    void *(*free)(void * ptr);//节点值释放函数
+    int (*match)(void *ptr, void *key);节点值对比函数
+} list;
+redis链表特性：双端，无环，带表头指针和尾指针，链表长度计数器len，多态（使用void*保存节点值）
+可以通过list结构的dup free match三个属性为节点值设置类型特定函数，所以链表可以用于保存各种不同类型的值
