@@ -787,3 +787,36 @@ public class ContractQueryExecutorConfig {
     private ExecutorService contractDbQueryExecutorService;
 	
 抽象类定义抽象方法子类必须重写
+
+redo log包含了数据的变更和change buffer的变更
+具体过程：
+merge那段的解释明白了change buffer操作逻辑。
+即change buffer变化与数据块变化是分开的，最初redo中记录的只是change buffer的变更，
+因为还未应用到数据块上。而merge后redo记录的是数据块、change buffer的变更。
+
+如果要简单地对比这两个机制在提升更新性能上的收益的话，
+redo log 主要节省的是随机写磁盘的 IO 消耗（转成顺序写），
+而 change buffer 主要节省的则是随机读磁盘的 IO 消耗。
+
+set long_query_time=0;
+select * from t where a between 10000 and 20000; /*Q1*/
+select * from t force index(a) where a between 10000 and 20000;/*Q2*/
+
+我理解 session A 开启的事务对 session B的delete操作后的索引数据的统计时效产生了影响，
+因为需要保证事务A的重复读，在数据页没有实际删除，而索引的统计选择了N个数据页，
+这部分数据页不收到前台事务的影响，所以整体统计值会变大，直接影响了索引选择的准确性；
+
+删的时候，由于有未提交事务开启的一致性视图read-view，所以导致了存在两个数据版本的数据，
+貌似优化器在"看"二级索引的时候，"看到"了多个历史版本的数据，错误以为有很多数据
+而主键索引数量由于确认机制不同，数量没有变，综合考虑，优化器选择了主键索引
+
+mysql> select
+  count(distinct left(email,4)）as L4,
+  count(distinct left(email,5)）as L5,
+  count(distinct left(email,6)）as L6,
+  count(distinct left(email,7)）as L7,
+from SUser;
+
+内存数据页和磁盘数据页
+当内存数据页跟磁盘数据页内容不一致的时候，我们称这个内存页为“脏页”。
+内存数据写入到磁盘后，内存和磁盘上的数据页的内容就一致了，称为“干净页”。
