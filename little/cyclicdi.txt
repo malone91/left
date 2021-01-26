@@ -828,7 +828,9 @@ from SUser;
 多关注脏页比例：
 平时要多关注脏页比例，不要让它经常接近 75%。
 脏页比例是通过 Innodb_buffer_pool_pages_dirty/Innodb_buffer_pool_pages_total 得到的，具体的命令参考下面的代码：
-mysql> select VARIABLE_VALUE into @a from global_status where VARIABLE_NAME = 'Innodb_buffer_pool_pages_dirty';select VARIABLE_VALUE into @b from global_status where VARIABLE_NAME = 'Innodb_buffer_pool_pages_total';select @a/@b;
+mysql> select VARIABLE_VALUE into @a from global_status where VARIABLE_NAME = 'Innodb_buffer_pool_pages_dirty';
+       select VARIABLE_VALUE into @b from global_status where VARIABLE_NAME = 'Innodb_buffer_pool_pages_total';
+       select @a/@b;
 
 一旦一个查询请求需要在执行过程中先 flush 掉一个脏页时，这个查询就可能要比平时慢了。
 而 MySQL 中的一个机制，可能让你的查询会更慢：在准备刷一个脏页的时候，如果这个数据页旁边的数据页刚好是脏页，
@@ -842,3 +844,65 @@ mysql> select VARIABLE_VALUE into @a from global_status where VARIABLE_NAME = 'I
 
 InnoDB 会在后台刷脏页，而刷脏页的过程是要将内存页写入磁盘。所以，无论是你的查询语句在需要内存的时候可能要求淘汰一个脏页，
 还是由于刷脏页的逻辑会占用 IO 资源并可能影响到了你的更新语句，都可能是造成你从业务端感知到 MySQL“抖”了一下的原因。
+
+redo log还记录了change buffer的改变,那么还要把change buffer purge到idb以及merge change buffer.merge生成的数据页也是脏页,也要持久化到磁盘
+
+下面两个相除得到脏页比例
+SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_pages_dirty'; 0
+SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_pages_total';  262112
+
+SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_pages_data'; 188771
+
+SHOW GLOBAL VARIABLES LIKE 'innodb_buffer_pool_size'; 4294967296
+
+SHOW GLOBAL STATUS LIKE 'Innodb_page_size';  16384
+
+
+SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool_pages_data'; 188771
+show global variables like '%capacity%'; innodb_io_capacity:4000    innodb_io_capacity_max:8000
+ Innodb_buffer_pool_pages_data / Innodb_buffer_pool_pages_total * 100%
+
+1：MySQL抖一下是什么意思？
+
+抖我认为就是不稳定的意思，一个SQL语句平时速度都挺快的，偶尔会慢一下且没啥规律，就是抖啦！
+
+2：MySQL为啥会抖一下？
+
+因为运行的不正常了，或者不稳定了，需要花费更多的资源处理别的事情，会使SQL语句的执行效率明显变慢。
+针对innoDB导致MySQL抖的原因，主要是InnoDB 会在后台刷脏页，而刷脏页的过程是要将内存页写入磁盘。
+所以，无论是你的查询语句在需要内存的时候可能要求淘汰一个脏页，
+还是由于刷脏页的逻辑会占用 IO 资源并可能影响到了你的更新语句，都可能是造成你从业务端感知MySQL“抖”了一下的原因。
+
+3：MySQL抖一下有啥问题？
+
+很明显系统不稳定，性能突然下降对业务端是很不友好的。
+
+4：怎么让MySQL不抖？
+
+设置合理参数配配置，尤其是设置 好innodb_io_capacity 的值，并且平时要多关注脏页比例，不要让它经常接近 75%
+
+5：啥是脏页？
+
+当内存数据页跟磁盘数据页内容不一致的时候，我们称这个内存页为“脏页”。
+
+按照这个定义感觉脏页是不可避免的，写的时候总会先写内存再写磁盘和有没有用WAL没啥关系？
+
+6：啥是干净页？
+
+内存数据写入到磁盘后，内存和磁盘上的数据页的内容就一致了，称为“干净页”。
+
+7：脏页是咋产生的？
+
+因为使用了WAL技术，这个技术会把数据库的随机写转化为顺序写，但副作用就是会产生脏页。
+
+8：啥是随机写？为啥那么耗性能？
+
+随机写我的理解是，这次写磁盘的那个扇区和上一次没啥关系，需要重新定位位置，机械运动是很慢的即使不是机械运动重新定位写磁盘的位置也是很耗时的。
+
+9：啥是顺序写？
+
+顺序写我的理解是，这次写磁盘那个扇区就在上一次的下一个位置，不需要重新定位写磁盘的位置速度当然会快一些。
+
+10：WAL怎么把随机写转化为顺序写的？
+
+写redolog是顺序写的，先写redolog等合适的时候再写磁盘，间接的将随机写变成了顺序写，性能确实会提高不少。
