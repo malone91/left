@@ -1,0 +1,40 @@
+IOC的实现大致可以分为两种实现：
+一个是依赖查找，一个是依赖注入
+名称查找，id和name在一个上下文唯一
+
+spring应用中可以有多个上下文
+
+根据bean名称查找，实时和延迟查找
+spring有一个延迟加载的bean，不是一码事。
+
+<relativePath>../pom.xml</relativePath>
+解决依赖的顺序问题或依赖的继承的问题
+
+spring-context包即可
+1、BeanFactory 直接获取user 通过名称查找
+resources下建立META-INF  xxx.xml
+
+<bean id class>
+    <properties name value>
+</bean>
+BeanFactory beanFactory = new ClassPathXmlApplicationContext("");
+强转beanFactory.getBean("")
+
+2、ObjectFactory 间接获取user 通过名称查找
+<bean id ="objectFactory class="ObjectFactoryCreatingFactoryBean">
+    <property name="targetBeanName" value="user" />
+   ObjectFactory由BeanFactory获取
+
+   没有生成新的bean
+   如果是FactoryBean获取情况就不一样了
+
+3、通过类型查找
+beanFactory.getBean(classType)单个
+
+if(beanFactory instanceof ListableBeanFactory) {
+    ListableBeanFactory l = (ListableBeanFactory)beanFactory
+    Map<String, User> map = l.getBeansOfType(User.class);
+}
+4、通过id和类型复合查询
+5、通过注解来查找 extends User
+getBeansOfAnnotation
