@@ -38,3 +38,106 @@ if(beanFactory instanceof ListableBeanFactory) {
 4、通过id和类型复合查询
 5、通过注解来查找 extends User
 getBeansOfAnnotation
+
+Spring IOC的依赖查找分为名称 类型 注解三种方式，单个类型和多个类型
+
+dependency lookup和 dependency injection
+下面是依赖注入：
+
+包括名称注入，类型注入，注入容器内建bean对象、注入非bean
+注入类型：实时和延迟注入
+
+依赖查找和依赖注入的区别
+都属于依赖，依赖不来自同一个地方
+
+spring IOC依赖来源：
+自定义bean
+容器初始化内建bean对象 Environment
+容器内建依赖 BeanFactory 对象内部声明的setBeanFactory
+
+依赖的来源并不是我们自定义的bean也可能来自容器的bean对象和bean内建的依赖
+
+谁才是真正IOC容器的底层？
+BeanFactory和ApplicationContract谁才是IOC容器？
+ApplicationContext就是BeanFactory，实际上是两个不同的对象
+The BeanFactory interface provides an advanced configuration mechanism
+capable of managing any type of object.
+提供了一些高级机制的一个配置，管理对象，而不是bean
+
+ApplicationContext is a sun-interface of BeanFactory，
+简化了和spring aop的整合，配置元信息（Environment）@Bean是需要ac来支持的
+消息资源的处理，用于国际化，事件的发布，应用级别的上下文，比如WebApplicationContext
+BeanFactory提供一个配置的框架，是一个基本的功能，是一个底层的容器，ApplicationContext在这个基础
+上面增加了一些特性，更多企业级特性的功能，一个完整的超集，他有的都有
+
+两个是同一个事物，ApplicationContext组合了一个BeanFactory的实现
+得到ApplicationContext的时候，千万去调用它的getBeanFactory方法，去获取真正底层的实现，
+而非直接进行替换
+
+bf是spring底层的IOC容器，ac是具备应用特性的bf超集
+
+XML作为IOC容器示例
+DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
+int beanDefinitionsCount = reader.load(location);
+beanFactory.getBeansOfType(User.class);
+
+注解作为IOC容器示例
+DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+AnnotationConfigApplicationContext a = new AnnotationConfigApplicationContext();
+//当前类作为配置类
+a.register(当前类.class);
+a.getBeansOfType(User.class);//什么也拿不到
+所以：通过Java注解的方式作为一个bean
+1、@Bean
+public User user() {
+    User u = new User();
+    u.setId(1L);
+    u.setName("1");
+    return user;
+}
+2、当前类加上@Configuration
+3、启动应用上下文
+a.refresh();
+
+
+
+IOC启动脉络：
+IOC容器生命周期：启动，运行，停止
+从refresh方法，加锁，可能在任意代码或者多线程环境下启动
+prepareFresh中initPropertySources，校验Environment的properties
+obtainFreshBeanFactory
+
+
+启动：创建BeanFactory并进行初步的初始化，加入一些我们内建的一些bean对象或者bean依赖
+以及加上一些内建的非bean的依赖，还有就是BeanFactory的扩展点，BeanFactoryPostProcessor
+还有对bean的修改或者扩展，执行BeanPostProcessor进行操作，还有国际化，事件，    资源操作
+
+停止：销毁所有bean和bean工厂
+
+
+面试题：
+什么是Spring IOC容器
+依赖注入，依赖查找， 这个框架是实现一个依赖反转的原则，DI是IOC实现的一种
+
+BeanFactory和FactoryBean区别
+BeanFactory是IOC底层容器
+FactoryBean是创建Bean的一种方式，帮助实现复杂的初始化逻辑，
+是一个工厂Bean，可以让我们自定义Bean的创建过程
+
+Spring容器启动时做了哪些准备？
+IOC配置元信息读取和解析， xml annotation
+IOC容器生命周期  postProcessor
+Spring事件发布
+国际化等等
+
+
+BeanDefinition：定义Bean的配置元信息接口
+Bean类名，行为配置如作用域，自动绑定，生命周期回调，其他Bean引用，
+bean配置，属性配置如数据库连接池
+
+CircularReferenceDemo.java
+findUsages();
+循环依赖：
+https://time.geekbang.org/course/detail/100042601-264662
+DefaultSingletonBeanRegistry#152
