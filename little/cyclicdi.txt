@@ -1033,3 +1033,69 @@ redo log buffer 就是一块内存，用来先存 redo 日志的。
 但是，真正把日志写到 redo log 文件（文件名是 ib_logfile+ 数字），是在执行 commit 语句的时候做的。
 
 uk_user_id_liker_id
+
+每个线程分配一个sort_buffer
+Extra 这个字段中的“Using filesort”表示的就是需要排序，MySQL 会给每个线程分配一块内存用于排序，称为 sort_buffer。
+sort_buffer_size
+“按 name 排序”这个动作，可能在内存中完成，也可能需要使用外部排序，这取决于排序所需的内存和参数 sort_buffer_size。
+sort_buffer_size，就是 MySQL 为排序开辟的内存（sort_buffer）的大小。
+如果要排序的数据量小于 sort_buffer_size，排序就在内存中完成。但如果排序数据量太大，内存放不下，则不得不利用磁盘临时文件辅助排序。
+
+全字段排序 到主键 id 索引取出整行，取 name、city、age 三个字段的值，存入 sort_buffer 中；
+rowid排序 新的算法放入 sort_buffer 的字段，只有要排序的列（即 name 字段）和主键 id。
+因为这时候参与排序的行数虽然仍然是 4000 行，但是每一行都变小了，因此需要排序的总数据量就变小了，需要的临时文件也相应地变少了。
+
+如果 MySQL 实在是担心排序内存太小，会影响排序效率，才会采用 rowid 排序算法，这样排序过程中一次可以排序更多行，但是需要再回到原表去取数据。
+如果 MySQL 认为内存足够大，会优先选择全字段排序，把需要的字段都放到 sort_buffer 中，这样排序后就会直接从内存里面返回查询结果了，不用再回到原表去取数据。
+这也就体现了 MySQL 的一个设计思想：如果内存够，就要多利用内存，尽量减少磁盘访问。
+
+.不会有排序，这种情况属于《高性能mysql》里提到的“in技法”，符合索引的最左原则，是2个等值查询，可以用到右边的索引列。
+2.分页查询，可以用延迟关联来优化：
+select * from t join
+(select id from t where city in('杭州','苏州') order by name limit 10000,100) t_id
+on t.id=t_id.id;
+事实上会有排序的
+虽然有 (city,name) 联合索引，对于单个 city 内部，name 是递增的。
+但是由于这条 SQL 语句不是要单独地查一个 city 的值，而是同时查了"杭州"和" 苏州 "两个城市，因此所有满足条件的 name 就不是递增的了
+
+join和left join的区别很大
+
+Extra 字段显示 Using temporary，表示的是需要使用临时表；Using filesort，表示的是需要执行排序操作。
+
+如果你创建的表没有主键，或者把一个表的主键删掉了，那么 InnoDB 会自己生成一个长度为 6 字节的 rowid 来作为主键。
+
+这也就是排序模式里面，rowid 名字的来历。实际上它表示的是：每个引擎用来唯一标识数据行的信息。
+对于有主键的 InnoDB 表来说，这个 rowid 就是主键 ID；
+对于没有主键的 InnoDB 表来说，这个 rowid 就是由系统生成的；
+MEMORY 引擎不是索引组织表。在这个例子里面，你可以认为它就是一个数组。因此，这个 rowid 其实就是数组的下标。
+
+对索引字段做函数操作，可能会破坏索引值的有序性，因此优化器就决定放弃走树搜索功能。
+放弃了树搜索功能，优化器可以选择遍历主键索引，也可以选择遍历索引 t_modified，优化器对比索引大小后发现，索引 t_modified 更小，遍历这个索引比遍历主键索引来得更快。
+因此最终还是会选择索引 t_modified。
+
+全索引扫描：
+由于在 t_modified 字段加了 month() 函数操作，导致了全索引扫描。
+为了能够用上索引的快速定位能力，我们就要把 SQL 语句改成基于字段本身的范围查询。按照下面这个写法，优化器就能按照我们预期的，用上 t_modified 索引的快速定位能力了。
+mysql> select count(*) from tradelog where
+    -> (t_modified >= '2016-7-1' and t_modified<'2016-8-1') or
+    -> (t_modified >= '2017-7-1' and t_modified<'2017-8-1') or
+    -> (t_modified >= '2018-7-1' and t_modified<'2018-8-1');
+
+坑：
+对于 select * from tradelog where id + 1 = 10000 这个 SQL 语句，这个加 1 操作并不会改变有序性，
+但是 MySQL 优化器还是不能用 id 索引快速定位到 9999 这一行。所以，需要你在写 SQL 语句的时候，手动改写成 where id = 10000 -1 才可以。
+
+select “10” > 9 返回的是 1，所以你就能确认 MySQL 里的转换规则了：在 MySQL 中，字符串和数字做比较的话，是将字符串转换成数字。
+
+
+mysql> select * from tradelog where  CAST(tradid AS signed int) = 110717;
+
+小表驱动大表：
+ (这题目改成100万禾10000万比较好)
+如果是考察语句写法，这两个表谁放前面都一样，优化器会调整顺序选择合适的驱动表；
+
+如果是考察优化器怎么实现的，你可以这么想，每次在树搜索里面做一次查找都是log(n), 所以对比的是100*log(10000)和 10000*log(100)哪个小，
+显然是前者，所以结论应该是让小表驱动大表。
+
+Using index是覆盖索引
+Using index condition 是索引下推
