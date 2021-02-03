@@ -1099,3 +1099,18 @@ mysql> select * from tradelog where  CAST(tradid AS signed int) = 110717;
 
 Using index是覆盖索引
 Using index condition 是索引下推
+
+感觉要使用索引就不能“破坏”索引原有的顺序，这节的函数操作，隐式转换都“破坏”了原有的顺序。
+前一节的select * from t where city in in (“杭州”," 苏州 ") order by name limit 100;
+同样是破坏了 (city,name) 联合索引的递增顺序，类似的还有使用联合索引，一个字段DESC，一个ASC。
+
+坏查询不一定是慢查询
+
+你看到了，session A 先用 start transaction with consistent snapshot 命令启动了一个事务，之后 session B 才开始执行 update 语句。
+session B 执行完 100 万次 update 语句后，id=1 这一行处于什么状态呢？你可以从图 16 中找到答案。
+session B 更新完 100 万次，生成了 100 万个回滚日志 (undo log)。带 lock in share mode 的 SQL 语句，是当前读，因此会直接读到 1000001 这个结果，所以速度很快；
+而 select * from t where id=1 这个语句，是一致性读，因此需要从 1000001 开始，依次执行 undo log，执行了 100 万次以后，才将 1 这个结果返回。
+依次执行undo log才有结果返回
+
+回滚最新一次的提交记录： git revert HEAD
+回滚前一次的提交记录 ： git revert HEAD^
