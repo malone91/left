@@ -1114,3 +1114,18 @@ session B 更新完 100 万次，生成了 100 万个回滚日志 (undo log)。�
 
 回滚最新一次的提交记录： git revert HEAD
 回滚前一次的提交记录 ： git revert HEAD^
+
+
+mysql> CREATE TABLE `table_a` (
+  `id` int(11) NOT NULL,
+  `b` varchar(10) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `b` (`b`)
+) ENGINE=InnoDB;
+有 100 万行数据，其中有 10 万行数据的 b 的值是’1234567890’
+
+mysql> select * from table_a where b='1234567890abcd';
+在传给引擎执行的时候，做了字符截断。因为引擎里面这个行只定义了长度是 10，所以只截了前 10 个字节，就是’1234567890’进去做匹配；
+10万次回表，到server层判断不符合，记录将会过滤掉
+
+RR隔离级别下，为保证binlog记录顺序，非索引更新会锁住全表记录，且事务结束前不会对不符合条件记录有逐步释放的过程。
