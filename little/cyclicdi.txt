@@ -1032,8 +1032,11 @@ mysql是能确认binlog是完整的
 一个事务的 binlog 是有完整格式的：statement 格式的 binlog，最后会有 COMMIT；row 格式的 binlog，最后会有一个 XID event。
 
 curl:
-curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '{"currentPage":1,"pageSize":10,"searchInfo":""}' 'http://localhost:9100/alliance/change/b/main/contract/list'
+curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json'
+ -d '{"currentPage":1,"pageSize":10,"searchInfo":""}' 'http://localhost:9100/alliance/change/b/main/contract/list'
+
 curl -X GET --header 'Accept: application/json' 'http://10.115.106.18:9100/leasing/dependency/11'
+
 处于 prepare 阶段的 redo log 加上完整 binlog，重启就能恢复，MySQL 为什么要这么设计?
 其实，这个问题还是跟我们在反证法中说到的数据与备份的一致性有关。在时刻 B，也就是 binlog 写完以后 MySQL 发生崩溃，
 这时候 binlog 已经写入了，之后就会被从库（或者用这个 binlog 恢复出来的库）使用。
@@ -1226,3 +1229,47 @@ LOCK_AUTO_INC：自增锁；
 将锁分为读锁和写锁主要是为了提高读的并发，如果不区分读写锁，那么数据库将没办法并发读，并发性将大大降低。
 而 IS（读意向）、IX（写意向）只会应用在表锁上，方便表锁和行锁之间的冲突检测。LOCK_AUTO_INC 是一种特殊的表锁。下面依次进行介绍。
 
+幻读指的是一个事务在前后两次查询同一个范围的时候，后一次查询看到了前一次查询没有看到的行。
+
+对“幻读”做一个说明：在可重复读隔离级别下，普通的查询是快照读，是不会看到别的事务插入的数据的。
+因此，幻读在“当前读”下才会出现。上面 session B 的修改结果，被 session A 之后的 select 语句用“当前读”看到，不能称为幻读。幻读仅专指“新插入的行”。
+
+现在你知道了，产生幻读的原因是，行锁只能锁住行，但是新插入记录这个动作，要更新的是记录之间的“间隙”。
+因此，为了解决幻读问题，InnoDB 只好引入新的锁，也就是间隙锁 (Gap Lock)。
+
+这里 session B 并不会被堵住。因为表 t 里并没有 c=7 这个记录，因此 session A 加的是间隙锁 (5,10)。
+而 session B 也是在这个间隙加的间隙锁。它们有共同的目标，即：保护这个间隙，不允许插入值。但，它们之间是不冲突的。
+间隙锁和行锁合称 next-key lock，每个 next-key lock 是前开后闭区间。也就是说，我们的表 t 初始化以后，如果用 select * from t for update 要把整个表所有记录锁起来，
+就形成了 7 个 next-key lock，分别是 (-∞,0]、(0,5]、(5,10]、(10,15]、(15,20]、(20, 25]、(25, +supremum]。
+
+你看到了，其实都不需要用到后面的 update 语句，就已经形成死锁了。
+我们按语句执行顺序来分析一下：session A 执行 select … for update 语句，
+由于 id=9 这一行并不存在，因此会加上间隙锁 (5,10);session B 执行 select … for update 语句，
+同样会加上间隙锁 (5,10)，间隙锁之间不会冲突，因此这个语句可以执行成功；
+session B 试图插入一行 (9,9,9)，被 session A 的间隙锁挡住了，只好进入等待；session A 试图插入一行 (9,9,9)，被 session B 的间隙锁挡住了。
+至此，两个 session 进入互相等待状态，形成死锁。
+当然，InnoDB 的死锁检测马上就发现了这对死锁关系，让 session A 的 insert 语句报错返回了。
+
+间隙锁的引入，可能会导致同样的语句锁住更大的范围，这其实是影响了并发度的。其实，这还只是一个简单的例子，在下一篇文章中我们还会碰到更多、更复杂的例子。
+
+间隙锁是在可重复读隔离级别下才会生效的。所以，你如果把隔离级别设置为读提交的话，就没有间隙锁了。
+但同时，你要解决可能出现的数据和日志不一致问题，需要把 binlog 格式设置为 row。这，也是现在不少公司使用的配置组合。
+
+binlog日志有三种格式，分别为Statement,MiXED,以及ROW
+show global variables like '%binlog_format%'   -> ROW
+show global variables like '%isolation%'  -> transaction_isolation:READ-COMMITTED, tx_isolation:READ-COMMITTED
+
+Statement：每一条会修改数据的sql都会记录在binlog中,优点是不需要记录每一行的变化，减少了binlog日志量，节约了IO，提高性能。
+(相比row能节约多少性能与日志量，这个取决于应用的SQL情况，正常同一条记录修改或者插入row格式所产生的日志量还小于Statement产生的日志量，
+    但是考虑到如果带条件的update操作，以及整表删除，alter表等操作，ROW格式会产生大量日志，
+因此在考虑是否使用ROW格式日志时应该跟据应用的实际情况，其所产生的日志量会增加多少，以及带来的IO性能问题。)
+由于记录的只是执行语句，为了这些语句能在slave上正确运行，因此还必须记录每条语句在执行的时候的一些相关信息，以保证所有语句能在slave得到和在master端执行时候相同的结果。
+另外mysql 的复制,像一些特定函数功能，slave可与master上要保持一致会有很多相关问题(如sleep()函数， last_insert_id()，以及user-defined functions(udf)会出现问题).
+
+Row：不记录sql语句上下文相关信息，仅保存哪条记录被修改。
+rowlevel的日志内容会非常清楚的记录下每一行数据修改的细节
+所有的执行的语句当记录到日志中的时候，都将以每行记录的修改来记录，这样可能会产生大量的日志内容,
+比如一条update语句，修改多条记录，则binlog中每一条修改都会有记录，这样造成binlog日志量会很大，
+特别是当执行alter table之类的语句的时候，由于表结构修改，每条记录都发生改变，那么该表每一条记录都会记录到日志中。
+
+Mixedlevel: 是以上两种level的混合使用，一般的语句修改使用statment格式保存binlog，如一些函数，statement无法完成主从复制的操作，则采用row格式保存binlog
