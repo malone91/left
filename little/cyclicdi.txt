@@ -1272,4 +1272,36 @@ rowlevel的日志内容会非常清楚的记录下每一行数据修改的细节
 比如一条update语句，修改多条记录，则binlog中每一条修改都会有记录，这样造成binlog日志量会很大，
 特别是当执行alter table之类的语句的时候，由于表结构修改，每条记录都发生改变，那么该表每一条记录都会记录到日志中。
 
-Mixedlevel: 是以上两种level的混合使用，一般的语句修改使用statment格式保存binlog，如一些函数，statement无法完成主从复制的操作，则采用row格式保存binlog
+Mixedlevel: 是以上两种level的混合使用，一般的语句修改使用statement格式保存binlog，如一些函数，statement无法完成主从复制的操作，则采用row格式保存binlog
+
+BLOCKED、WAITING、TIMED_WAITING 可以理解为线程导致休眠状态的三种原因。
+运行状态的线程如果调用一个阻塞的 API（例如以阻塞方式读文件）或者等待某个事件（例如条件变量），
+那么线程的状态就会转换到休眠状态，同时释放 CPU 使用权，休眠状态的线程永远没有机会获得 CPU 使用权
+
+线程调用阻塞式 API 时，是否会转换到 BLOCKED 状态呢？
+在操作系统层面，线程是会转换到休眠状态的，但是在 JVM 层面，Java 线程的状态不会发生变化，也就是说 Java 线程的状态会依然保持 RUNNABLE 状态。
+JVM 层面并不关心操作系统调度相关的状态，
+因为在 JVM 看来，等待 CPU 使用权（操作系统层面此时处于可执行状态）与等待 I/O（操作系统层面此时处于休眠状态）没有区别，都是在等待某个资源，所以都归入了 RUNNABLE 状态。
+而我们平时所谓的 Java 在调用阻塞式 API 时，线程会阻塞，指的是操作系统线程的状态，并不是 Java 线程的状态。
+
+RUNNABLE 与 TIMED_WAITING 的状态转换有五种场景会触发这种转换：
+调用带超时参数的 Thread.sleep(long millis) 方法；
+获得 synchronized 隐式锁的线程，调用带超时参数的 Object.wait(long timeout) 方法；
+调用带超时参数的 Thread.join(long millis) 方法；
+调用带超时参数的 LockSupport.parkNanos(Object blocker, long deadline) 方法；
+调用带超时参数的 LockSupport.parkUntil(long deadline) 方法。
+
+RUNNABLE 与 WAITING 的状态转换
+第一种场景，获得 synchronized 隐式锁的线程，调用无参数的 Object.wait() 方法。
+其中，wait() 方法我们在上一篇讲解管程的时候已经深入介绍过了，这里就不再赘述。
+第二种场景，调用无参数的 Thread.join() 方法。其中的 join() 是一种线程同步方法，
+例如有一个线程对象 thread A，当调用 A.join() 的时候，执行这条语句的线程会等待 thread A 执行完，
+而等待中的这个线程，其状态会从 RUNNABLE 转换到 WAITING。当线程 thread A 执行完，
+原来等待它的线程又会从 WAITING 状态转换到 RUNNABLE。第三种场景，调用 LockSupport.park() 方法。
+其中的 LockSupport 对象，也许你有点陌生，其实 Java 并发包中的锁，都是基于它实现的。
+调用 LockSupport.park() 方法，当前线程会阻塞，线程的状态会从 RUNNABLE 转换到 WAITING。
+调用 LockSupport.unpark(Thread thread) 可唤醒目标线程，目标线程的状态又会从 WAITING 状态转换到 RUNNABLE。
+
+max_connnetions:
+短连接模型存在一个风险，就是一旦数据库处理得慢一些，连接数就会暴涨。max_connections 参数，用来控制一个 MySQL 实例同时存在的连接数的上限，超过这个值，
+系统就会拒绝接下来的连接请求，并报错提示“Too many connections”。对于被拒绝连接的请求来说，从业务角度看就是数据库不可用。
