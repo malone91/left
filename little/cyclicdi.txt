@@ -1,4 +1,5 @@
-基本就是Spring源码大体原型了，委托的BeanFactory在Spring源码里是DefaultListableBeanFactory。循环依赖解决是三级缓存，提前暴露还没有初始化结束的bean。检测是Map存一下过程，aba这样顺序判断，有重复（a出现两次）就是环了。
+基本就是Spring源码大体原型了，委托的BeanFactory在Spring源码里是DefaultListableBeanFactory。循环依赖解决是三级缓存，提前暴露还没有初始化结束的bean。
+检测是Map存一下过程，aba这样顺序判断，有重复（a出现两次）就是环了。
 
 三级缓存源码对应
 org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton
@@ -52,7 +53,10 @@ assertEquals(Short.valueOf("1"), converter.convert("1"));
  wc -w gc.log
  jmap -dump:format=b,file=E:\heap.hprof 8864
  GC (Allocation Failure)  minor GC
- java -Dapp.home=/app/weblogic/scs -server -Xms4G -Xmx4G -Xmn2g -Xss256k -XX:PermSize=128m -XX:MaxPermSize=512m -Djava.awt.headless=true -Dfile.encoding=utf-8 -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -XX:AutoBoxCacheMax=20000 -XX:-OmitStackTraceInFastThrow -XX:ErrorFile=/app/weblogic/scs/logs/hs_err_%p.log -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/weblogic/scs/logs/ -Xloggc:/app/weblogic/scs/logs/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -jar /app/weblogic/scs/webapps/scs-service-0.0.1-SNAPSHOT.jar 810
+ java -Dapp.home=/app/weblogic/scs -server -Xms4G -Xmx4G -Xmn2g -Xss256k -XX:PermSize=128m -XX:MaxPermSize=512m -Djava.awt.headless=true
+ -Dfile.encoding=utf-8 -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -XX:AutoBoxCacheMax=20000
+  -XX:-OmitStackTraceInFastThrow -XX:ErrorFile=/app/weblogic/scs/logs/hs_err_%p.log -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/app/weblogic/scs/logs/ -Xloggc:/app/weblogic/scs/logs/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -jar /app/weblogic/scs/webapps/scs-service-0.0.1-SNAPSHOT.jar 810
  
  借助命令模式，我们可以将函数封装成对象。
  
@@ -87,10 +91,12 @@ assertEquals(Short.valueOf("1"), converter.convert("1"));
 epoll
 事件处理队列
 
-为了方便你理解，我再以连接请求和读数据请求为例，具体解释一下。这两个请求分别对应 Accept 事件和 Read 事件，Redis 分别对这两个事件注册 accept 和 get 回调函数。当 Linux 内核监听到有连接请求或读数据请求时，就会触发 Accept 事件和 Read 事件，此时，内核就会回调 Redis 相应的 accept 和 get 函数进行处理。
+为了方便你理解，我再以连接请求和读数据请求为例，具体解释一下。这两个请求分别对应 Accept 事件和 Read 事件，Redis 分别对这两个事件注册 accept 和 get 回调函数。
+当 Linux 内核监听到有连接请求或读数据请求时，就会触发 Accept 事件和 Read 事件，此时，内核就会回调 Redis 相应的 accept 和 get 函数进行处理。
 为事件注册accept和get函数
 
-Redis 单线程是指它对网络 IO 和数据读写的操作采用了一个线程，而采用单线程的一个核心原因是避免多线程开发的并发控制问题。单线程的 Redis 也能获得高性能，跟多路复用的 IO 模型密切相关，因为这避免了 accept() 和 send()/recv() 潜在的网络 IO 操作阻塞点。
+Redis 单线程是指它对网络 IO 和数据读写的操作采用了一个线程，而采用单线程的一个核心原因是避免多线程开发的并发控制问题。单线程的 Redis 也能获得高性能，
+跟多路复用的 IO 模型密切相关，因为这避免了 accept() 和 send()/recv() 潜在的网络 IO 操作阻塞点。
 
 AOF 还有一个好处：它是在命令执行成功后才记录日志，所以不会阻塞当前的写操作。 避免出现记录错误日志
 
@@ -111,7 +117,8 @@ AOF重写这个过程不会阻塞主线程。
 Redis 提供了两个命令来生成 RDB 文件，分别是 save 和 bgsave。save：在主线程中执行，会导致阻塞；bgsave：创建一个子进程，专门用于写入 RDB 文件，避免了主线程的阻塞，这也是 Redis RDB 文件生成的默认配置。
 在对内存数据做快照时，这些数据还能“动”吗? 
 
-为了快照而暂停写操作，肯定是不能接受的。所以这个时候，Redis 就会借助操作系统提供的写时复制技术（Copy-On-Write, COW），在执行快照的同时，正常处理写操作。简单来说，bgsave 子进程是由主线程 fork 生成的，可以共享主线程的所有内存数据。bgsave 子进程运行后，开始读取主线程的内存数据，并把它们写入 RDB 文件。
+为了快照而暂停写操作，肯定是不能接受的。所以这个时候，Redis 就会借助操作系统提供的写时复制技术（Copy-On-Write, COW），在执行快照的同时，正常处理写操作。
+简单来说，bgsave 子进程是由主线程 fork 生成的，可以共享主线程的所有内存数据。bgsave 子进程运行后，开始读取主线程的内存数据，并把它们写入 RDB 文件。
 
 快照的频率不好把握
 
@@ -274,7 +281,8 @@ Redis 中保存了库存量，而库存量的最新值又是数据库在维护�
 
 但用切片集群分别存储库存信息，缺点是如果需要向用户展示剩余库存，要分别查询多个切片，最后聚合结果后返回给客户端。这种情况下，建议不展示剩余库存信息，直接针对秒杀请求返回是否秒杀成功即可。
 
-秒杀系统最重要的是，把大部分请求拦截在最前面，只让很少请求能够真正进入到后端系统，降低后端服务的压力，常见的方案包括：页面静态化（推送到CDN）、网关恶意请求拦截、请求分段放行、缓存校验和扣减库存、消息队列处理订单。
+秒杀系统最重要的是，把大部分请求拦截在最前面，只让很少请求能够真正进入到后端系统，降低后端服务的压力，
+常见的方案包括：页面静态化（推送到CDN）、网关恶意请求拦截、请求分段放行、缓存校验和扣减库存、消息队列处理订单。
 
 另外，为了不影响其他业务系统，秒杀系统最好和业务系统隔离，主要包括应用隔离、部署隔离、数据存储隔离。
 
@@ -341,7 +349,8 @@ echo never /sys/kernel/mm/transparent_hugepage/enabled
 "V20120200825J0010001",
 "V56120190824J0010001"]}}
 
-当主从库断连后，主库会把断连期间收到的写操作命令，写入 replication buffer，同时也会把这些操作命令也写入 repl_backlog_buffer 这个缓冲区。repl_backlog_buffer 是一个环形缓冲区，主库会记录自己写到的位置，从库则会记录自己已经读到的位置。
+当主从库断连后，主库会把断连期间收到的写操作命令，写入 replication buffer，同时也会把这些操作命令也写入 repl_backlog_buffer 这个缓冲区。
+repl_backlog_buffer 是一个环形缓冲区，主库会记录自己写到的位置，从库则会记录自己已经读到的位置。
 
  RocketMQ 为每个消费组在每个队列上维护一个消费位置（Consumer Offset）
  
@@ -444,7 +453,8 @@ Threads_quest 这几个线程可以接受请求之后扔给其他线程处理增
 
 但是对于某一个请求CPU的程序来说，它看到的现象是，我让CPU做了一次加法，它八秒才做完，看起来就是“变慢”了。
 
-所以，程序变慢一定是因为某一个资源忙，遇到了瓶颈。同步程序因为线程数量的限制，它的瓶颈往往是线程数量。并不能发挥服务器的全部处理能力。异步程序不需要那么多线程，所以可以发挥出服务器的全部处理能力，直到把CPU或者磁盘IO打满，所以要快得多。
+所以，程序变慢一定是因为某一个资源忙，遇到了瓶颈。同步程序因为线程数量的限制，它的瓶颈往往是线程数量。并不能发挥服务器的全部处理能力。
+异步程序不需要那么多线程，所以可以发挥出服务器的全部处理能力，直到把CPU或者磁盘IO打满，所以要快得多。
 
 go 语言的本质就是 用同步的方式，写出异步的代码。
 
@@ -455,7 +465,8 @@ go processConn()
 
 
 需要调用get方法结束
-老师你好，CompletableFuture这种回调底层还是forkjoin框架，forkjoin对于io这种操作还是会阻塞线程，而且CompletableFuture默认线程数是与cpu核数一样的。在现在容器化的场景下，Cpu核数都不会很多（一般都是个位数），那么使用CompletableFuture是执行io操作是不是会更早的无响应？因为个位数的线程很快就都被阻塞了。
+老师你好，CompletableFuture这种回调底层还是forkjoin框架，forkjoin对于io这种操作还是会阻塞线程，而且CompletableFuture默认线程数是与cpu核数一样的。
+在现在容器化的场景下，Cpu核数都不会很多（一般都是个位数），那么使用CompletableFuture是执行io操作是不是会更早的无响应？因为个位数的线程很快就都被阻塞了。
 作者回复: 这里说一下我的理解：
 
 CompletableFuture还不能等完全同于ForkJoin。
@@ -481,7 +492,8 @@ CompletableFuture.get() 等于 Join
 
 TCP 连接它是一个全双工的通道，你可以同时进行数据的双向收发，互相是不会受到任何影响的。要提高吞吐量，应用层的协议也必须支持双工通信。
 
-在这个地方，不少同学还是摆脱不了“一问一答，再问再答”这种人类交流的自然方式对思维的影响，写出来的依然是单工通信的程序，单工通信的性能是远远不如双工通信的，所以，要想做到比较好的网络传输性能，双工通信的方式才是最佳的选择。
+在这个地方，不少同学还是摆脱不了“一问一答，再问再答”这种人类交流的自然方式对思维的影响，写出来的依然是单工通信的程序，单工通信的性能是远远不如双工通信的，
+所以，要想做到比较好的网络传输性能，双工通信的方式才是最佳的选择。
 
 消息队列，异步，缓存，锁的正确使用，线程协调，序列化管理，内存管理
 使用异步设计的方法；异步网络 IO；专用序列化、反序列化方法；设计良好的传输协议；双工通信。
@@ -492,10 +504,16 @@ kafaka
 3、缓存实现 利用PageCache
 
 对于磁盘来说，它有一个特性，就是顺序读写的性能要远远好于随机读写。在 SSD（固态硬盘）上，顺序读写的性能要比随机读写快几倍，如果是机械硬盘，这个差距会达到几十倍。
-为什么呢？操作系统每次从磁盘读写数据的时候，需要先寻址，也就是先要找到数据在磁盘上的物理位置，然后再进行数据读写。如果是机械硬盘，这个寻址需要比较长的时间，因为它要移动磁头，这是个机械运动，机械硬盘工作的时候会发出咔咔的声音，就是移动磁头发出的声音。顺序读写相比随机读写省去了大部分的寻址时间，它只要寻址一次，就可以连续地读写下去，所以说，性能要比随机读写要好很多。Kafka 就是充分利用了磁盘的这个特性。它的存储设计非常简单，对于每个分区，它把从 Producer 收到的消息，顺序地写入对应的 log 文件中，一个文件写满了，就开启一个新的文件这样顺序写下去。消费的时候，也是从某个全局的位置开始，也就是某一个 log 文件中的某个位置开始，顺序地把消息读出来。这样一个简单的设计，充分利用了顺序读写这个特性，极大提升了 Kafka 在使用磁盘时的 IO 性能。
+为什么呢？操作系统每次从磁盘读写数据的时候，需要先寻址，也就是先要找到数据在磁盘上的物理位置，然后再进行数据读写。如果是机械硬盘，这个寻址需要比较长的时间，因为它要移动磁头，
+这是个机械运动，机械硬盘工作的时候会发出咔咔的声音，就是移动磁头发出的声音。顺序读写相比随机读写省去了大部分的寻址时间，
+它只要寻址一次，就可以连续地读写下去，所以说，性能要比随机读写要好很多。Kafka 就是充分利用了磁盘的这个特性。它的存储设计非常简单，对于每个分区，
+它把从 Producer 收到的消息，顺序地写入对应的 log 文件中，一个文件写满了，就开启一个新的文件这样顺序写下去。消费的时候，也是从某个全局的位置开始，
+也就是某一个 log 文件中的某个位置开始，顺序地把消息读出来。这样一个简单的设计，充分利用了顺序读写这个特性，极大提升了 Kafka 在使用磁盘时的 IO 性能。
 
 PageCache
-PageCache 就是操作系统在内存中给磁盘上的文件建立的缓存。无论我们使用什么语言编写的程序，在调用系统的 API 读写文件的时候，并不会直接去读写磁盘上的文件，应用程序实际操作的都是 PageCache，也就是文件在内存中缓存的副本。应用程序在写入文件的时候，操作系统会先把数据写入到内存中的 PageCache，然后再一批一批地写到磁盘上。读取文件的时候，也是从 PageCache 中来读取数据，这时候会出现两种可能情况。
+PageCache 就是操作系统在内存中给磁盘上的文件建立的缓存。无论我们使用什么语言编写的程序，在调用系统的 API 读写文件的时候，
+并不会直接去读写磁盘上的文件，应用程序实际操作的都是 PageCache，也就是文件在内存中缓存的副本。
+应用程序在写入文件的时候，操作系统会先把数据写入到内存中的 PageCache，然后再一批一批地写到磁盘上。读取文件的时候，也是从 PageCache 中来读取数据，这时候会出现两种可能情况。
 
 UPDATE dcs_alliance_contract
 SET store_name = (
@@ -525,7 +543,10 @@ create table T(ID int primary key, c int);
 更新数据时，IO成本高，采用WAL技术，WriteAheadLogging,先写日志，再写磁盘 redo-log,内存，空闲时写道磁盘
 redolog一个文件1G，4个文件环形
 
-write pos 是当前记录的位置，一边写一边后移，写到第 3 号文件末尾后就回到 0 号文件开头。checkpoint 是当前要擦除的位置，也是往后推移并且循环的，擦除记录前要把记录更新到数据文件。write pos 和 checkpoint 之间的是“粉板”上还空着的部分，可以用来记录新的操作。如果 write pos 追上 checkpoint，表示“粉板”满了，这时候不能再执行新的更新，得停下来先擦掉一些记录，把 checkpoint 推进一下。有了 redo log，InnoDB 就可以保证即使数据库发生异常重启，之前提交的记录都不会丢失，这个能力称为 crash-safe。
+write pos 是当前记录的位置，一边写一边后移，写到第 3 号文件末尾后就回到 0 号文件开头。checkpoint 是当前要擦除的位置，
+也是往后推移并且循环的，擦除记录前要把记录更新到数据文件。write pos 和 checkpoint 之间的是“粉板”上还空着的部分，可以用来记录新的操作。
+如果 write pos 追上 checkpoint，表示“粉板”满了，这时候不能再执行新的更新，得停下来先擦掉一些记录，把 checkpoint 推进一下。
+有了 redo log，InnoDB 就可以保证即使数据库发生异常重启，之前提交的记录都不会丢失，这个能力称为 crash-safe。
 
 redo-log是InnnoDB特有的日志模块 Server层也有自己的日志 binlog，所有引擎都可以使用
 
@@ -556,7 +577,9 @@ mysql 中事务支持是引擎层实现的
 串行化，顾名思义是对于同一行记录，“写”会加“写锁”，“读”会加“读锁”。当出现读写锁冲突的时候，后访问的事务必须等前一个事务执行完成，才能继续执行。
 
 隔离级别实现：视图
-在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的。这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。
+在实现上，数据库里面会创建一个视图，访问的时候以视图的逻辑结果为准。在“可重复读”隔离级别下，这个视图是在事务启动时创建的，
+整个事务存在期间都用这个视图。在“读提交”隔离级别下，这个视图是在每个 SQL 语句开始执行的时候创建的。
+这里需要注意的是，“读未提交”隔离级别下直接返回记录上的最新值，没有视图概念；而“串行化”隔离级别下直接用加锁的方式来避免并行访问。
 
 Oracle默认级别读提交；Oracle迁移mysql 改为读提交
 show variables like 'transaction_isolation'
@@ -667,7 +690,8 @@ MDL 的作用是，保证读写的正确性。你可以想象一下，如果一�
 
 重试机制，加个字段，  DDL阻塞问题  链式效应 防止饿死
 比如 启动一个事务查询，接下来alter会阻塞，然后查询也会阻塞
-如果某个表上的查询语句频繁，而且客户端有重试机制，也就是说超时后会再起一个新 session 再请求的话，这个库的线程很快就会爆满。你现在应该知道了，事务中的 MDL 锁，在语句执行开始时申请，但是语句结束后并不会马上释放，而会等到整个事务提交后再释放。
+如果某个表上的查询语句频繁，而且客户端有重试机制，也就是说超时后会再起一个新 session 再请求的话，这个库的线程很快就会爆满。
+你现在应该知道了，事务中的 MDL 锁，在语句执行开始时申请，但是语句结束后并不会马上释放，而会等到整个事务提交后再释放。
 
 两阶段锁？
 在 InnoDB 事务中，行锁是在需要的时候才加上的，但并不是不需要了就立刻释放，而是要等到事务结束时才释放。
@@ -723,14 +747,17 @@ InnoDB 利用了“所有数据都有多个版本”的这个特性，实现了�
 这样，事务 A 的视图数组就是[99,100], 事务 B 的视图数组是[99,100,101], 事务 C 的视图数组是[99,100,101,102]。
 
 select当前读：
-其实，除了 update 语句外，select 语句如果加锁，也是当前读。所以，如果把事务 A 的查询语句 select * from t where id=1 修改一下，加上 lock in share mode 或 for update，也都可以读到版本号是 101 的数据，返回的 k 的值是 3。下面这两个 select 语句，就是分别加了读锁（S 锁，共享锁）和写锁（X 锁，排他锁）。mysql> select k from t where id=1 lock in share mode;mysql> select k from t where id=1 for update;
+其实，除了 update 语句外，select 语句如果加锁，也是当前读。所以，如果把事务 A 的查询语句 select * from t where id=1 修改一下，
+加上 lock in share mode 或 for update，也都可以读到版本号是 101 的数据，返回的 k 的值是 3。下面这两个 select 语句，
+就是分别加了读锁（S 锁，共享锁）和写锁（X 锁，排他锁）。mysql> select k from t where id=1 lock in share mode;mysql> select k from t where id=1 for update;
 
 一致性读、当前读和行锁就串起来了。
 
 在读提交隔离级别下，每一个语句执行前都会重新算出一个新的视图
 
 数据的最新版本是一个事务的id
-从图中可以看到，第一个有效更新是事务 C，把数据从 (1,1) 改成了 (1,2)。这时候，这个数据的最新版本的 row trx_id 是 102，而 90 这个版本已经成为了历史版本。第二个有效更新是事务 B，把数据从 (1,2) 改成了 (1,3)。这时候，这个数据的最新版本（即 row trx_id）是 101，而 102 又成为了历史版本。
+从图中可以看到，第一个有效更新是事务 C，把数据从 (1,1) 改成了 (1,2)。这时候，这个数据的最新版本的 row trx_id 是 102，而 90 这个版本已经成为了历史版本。
+第二个有效更新是事务 B，把数据从 (1,2) 改成了 (1,3)。这时候，这个数据的最新版本（即 row trx_id）是 101，而 102 又成为了历史版本。
 
 可重复读共用一个一致性视图
 读提交每个语句执行前都会重新算出一个新的视图
@@ -996,7 +1023,8 @@ count(*)、count(主键 id) 和 count(1) 都表示返回满足条件的结果集
 
 但是 count(*) 是例外，并不会把全部字段取出来，而是专门做了优化，不取值。count(*) 肯定不是 null，按行累加。
 
-如果这个“字段”是定义为 not null 的话，一行行地从记录里面读出这个字段，判断不能为 null，按行累加；如果这个“字段”定义允许为 null，那么执行的时候，判断到有可能是 null，还要把值取出来再判断一下，不是 null 才累加。
+如果这个“字段”是定义为 not null 的话，一行行地从记录里面读出这个字段，判断不能为 null，按行累加；
+如果这个“字段”定义允许为 null，那么执行的时候，判断到有可能是 null，还要把值取出来再判断一下，不是 null 才累加。
 
 count(字段)<count(主键 id)<count(1)≈count(*)
 
@@ -1129,3 +1157,72 @@ mysql> select * from table_a where b='1234567890abcd';
 10万次回表，到server层判断不符合，记录将会过滤掉
 
 RR隔离级别下，为保证binlog记录顺序，非索引更新会锁住全表记录，且事务结束前不会对不符合条件记录有逐步释放的过程。
+为了提高数据库的并发能力，InnoDb 引入了行锁的概念
+
+行锁和表锁一样，也分成两种类型：读锁和写锁。常见的增删改（INSERT、DELETE、UPDATE）语句会自动对操作的数据行加写锁，
+查询的时候也可以明确指定锁的类型，SELECT ... LOCK IN SHARE MODE 语句加的是读锁，SELECT ... FOR UPDATE 语句加的是写锁。
+
+行锁这个名字听起来像是这个锁加在某个数据行上，实际上这里要指出的是：在 MySQL 中，行锁是加在索引上的。
+
+ B 树没有很好的伸缩性，它将多条数据都保存在节点里，
+ 如果数据中某个字段太长，一个 page 能容纳的数据量将受到限制，最坏的情况是一个 page 保存一条数据，这个时候 B 树退化成二叉树；
+ 另外 B 树无法修改字段最大长度，除非调整 page 大小，重建整个数据库。
+
+ B+ 树里，内节点（非叶子节点）中不再保存数据，而只保存用于查找的 key，
+ 并且所有的叶子节点按顺序使用链表进行连接，这样可以大大的方便范围查询，只要先查到起始位置，然后按链表顺序查找，一直查到结束位置即可。
+
+ 1、当执行下面的 SQL 时（id 为 students 表的主键），我们要知道，InnoDb 存储引擎会在 id = 49 这个主键索引上加一把 X 锁。
+
+ mysql> update students set score = 100 where id = 49;
+ 2、当执行下面的 SQL 时（name 为 students 表的二级索引），InnoDb 存储引擎会在 name = 'Tom' 这个索引上加一把 X 锁，
+ 同时会通过 name = 'Tom' 这个二级索引定位到 id = 49 这个主键索引，并在 id = 49 这个主键索引上加一把 X 锁。
+
+ mysql> update students set score = 100 where name = 'Tom';
+
+ 3、像上面这样的 SQL 比较简单，只操作单条记录，如果要同时更新多条记录，加锁的过程又是什么样的呢？譬如下面的 SQL（假设 score 字段为二级索引）：
+
+ mysql> update students set level = 3 where score >= 60;
+ 从图中可以看到当 UPDATE 语句被发给 MySQL 后，MySQL Server 会根据 WHERE 条件读取第一条满足条件的记录，
+ 然后 InnoDB 引擎会将第一条记录返回并加锁（current read），待 MySQL Server 收到这条加锁的记录之后，
+ 会再发起一个 UPDATE 请求，更新这条记录。一条记录操作完成，再读取下一条记录，直至没有满足条件的记录为止。
+ 因此，MySQL 在操作多条记录时 InnoDB 与 MySQL Server 的交互是一条一条进行的，
+ 加锁也是一条一条依次进行的，先对一条满足条件的记录加锁，返回给 MySQL Server，做一些 DML 操作，
+ 然后在读取下一条加锁，直至读取完毕。理解这一点，对我们后面分析复杂 SQL 语句的加锁过程将很有帮助。
+
+根据锁的粒度可以把锁细分为表锁和行锁，行锁根据场景的不同又可以进一步细分，在 MySQL 的源码里，定义了四种类型的行锁，如下：
+
+#define LOCK_TABLE  16  /* table lock */
+#define LOCK_REC    32  /* record lock */
+
+/* Precise modes */
+#define LOCK_ORDINARY   0
+#define LOCK_GAP    512
+#define LOCK_REC_NOT_GAP 1024
+#define LOCK_INSERT_INTENTION 2048
+LOCK_ORDINARY：也称为 Next-Key Lock，锁一条记录及其之前的间隙，这是 RR 隔离级别用的最多的锁，从名字也能看出来；
+LOCK_GAP：间隙锁，锁两个记录之间的 GAP，防止记录插入；
+LOCK_REC_NOT_GAP：只锁记录；
+LOCK_INSERT_INTENSION：插入意向 GAP 锁，插入记录时使用，是 LOCK_GAP 的一种特例。
+这四种行锁将是理解并解决数据库死锁的关键，我们下面将深入研究这四种锁的特点。但是在介绍这四种锁之前，让我们再来看下 MySQL 下锁的模式。
+
+锁类型和锁模式：
+MySQL 将锁分成两类：锁类型（lock_type）和锁模式（lock_mode）。
+锁类型就是上文中介绍的表锁和行锁两种类型，当然行锁还可以细分成记录锁和间隙锁等更细的类型，锁类型描述的锁的粒度，也可以说是把锁具体加在什么地方；
+而锁模式描述的是到底加的是什么锁，譬如读锁或写锁。锁模式通常是和锁类型结合使用的，锁模式在 MySQL 的源码中定义如下：
+/* Basic lock modes */
+enum lock_mode {
+    LOCK_IS = 0, /* intention shared */
+    LOCK_IX,    /* intention exclusive */
+    LOCK_S,     /* shared */
+    LOCK_X,     /* exclusive */
+    LOCK_AUTO_INC,  /* locks the auto-inc counter of a table in an exclusive mode*/
+    ...
+};
+LOCK_IS：读意向锁；
+LOCK_IX：写意向锁；
+LOCK_S：读锁；
+LOCK_X：写锁；
+LOCK_AUTO_INC：自增锁；
+将锁分为读锁和写锁主要是为了提高读的并发，如果不区分读写锁，那么数据库将没办法并发读，并发性将大大降低。
+而 IS（读意向）、IX（写意向）只会应用在表锁上，方便表锁和行锁之间的冲突检测。LOCK_AUTO_INC 是一种特殊的表锁。下面依次进行介绍。
+
