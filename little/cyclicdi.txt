@@ -1316,3 +1316,70 @@ show processlist
 select * from information_schema.innodb_trx 查看事务具体状态
 
 在 MySQL 中，会引发性能问题的慢查询，大体有以下三种可能：索引没有设计好；SQL 语句没写好；MySQL 选错了索引。
+
+use information_schema;
+select file_name,file_type,logfile_group_number,free_extents,total_extents,extra from files where file_type='UNDO LOG';
+
+只要 redo log 和 binlog 保证持久化到磁盘，就能确保 MySQL 异常重启后，数据可以恢复。
+
+binlog第一步page cache，第二部磁盘
+binlog 的写入逻辑比较简单：事务执行过程中，先把日志写到 binlog cache，事务提交的时候，再把 binlog cache 写到 binlog 文件中。
+
+一个事务的 binlog 是不能被拆开的，因此不论这个事务多大，也要确保一次性写入。这就涉及到了 binlog cache 的保存问题。
+
+系统给 binlog cache 分配了一片内存，每个线程一个，参数 binlog_cache_size 用于控制单个线程内 binlog cache 所占内存的大小。
+如果超过了这个参数规定的大小，就要暂存到磁盘。事务提交的时候，执行器把 binlog cache 里的完整事务写入到 binlog 中，并清空 binlog cache。
+
+查看各种参数 show global variables
+
+每个线程有自己 binlog cache，但是共用同一份 binlog 文件。
+write和binlog
+图中的 write，指的就是指把日志写入到文件系统的 page cache，并没有把数据持久化到磁盘，所以速度比较快。
+图中的 fsync，才是将数据持久化到磁盘的操作。一般情况下，我们认为 fsync 才占磁盘的 IOPS。
+
+write 和 fsync 的时机，是由参数 sync_binlog 控制的：
+sync_binlog=0 的时候，表示每次提交事务都只 write，不 fsync；
+sync_binlog=1 的时候，表示每次提交事务都会执行 fsync；
+sync_binlog=N(N>1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync。
+
+InnoDB 有一个后台线程，每隔 1 秒，就会把 redo log buffer 中的日志，调用 write 写到文件系统的 page cache，然后调用 fsync 持久化到磁盘。
+
+在出现 IO 瓶颈的场景里，将 sync_binlog 设置成一个比较大的值，可以提升性能。
+在实际的业务场景中，考虑到丢失日志量的可控性，一般不建议将这个参数设成 0，比较常见的是将其设置为 100~1000 中的某个数值。
+将 sync_binlog 设置为 N，对应的风险是：如果主机发生异常重启，会丢失最近 N 个事务的 binlog 日志。
+
+
+第一次和第二次cache，第三次磁盘
+事务在执行过程中，生成的 redo log 是要先写到 redo log buffer 的。
+然后就有同学问了，redo log buffer 里面的内容，是不是每次生成后都要直接持久化到磁盘呢？答案是，不需要。
+
+这三种状态分别是：存在 redo log buffer 中，物理上是在 MySQL 进程内存中，就是图中的红色部分；
+写到磁盘 (write)，但是没有持久化（fsync)，物理上是在文件系统的 page cache 里面，也就是图中的黄色部分；
+持久化到磁盘，对应的是 hard disk，也就是图中的绿色部分。
+日志写到 redo log buffer 是很快的，wirte 到 page cache 也差不多，但是持久化到磁盘的速度就慢多了。
+
+通常我们说 MySQL 的“双 1”配置，指的就是 sync_binlog 和 innodb_flush_log_at_trx_commit 都设置成 1。
+也就是说，一个事务完整提交前，需要等待两次刷盘，一次是 redo log（prepare 阶段），一次是 binlog。
+这时候，你可能有一个疑问，这意味着我从 MySQL 看到的 TPS 是每秒两万的话，每秒就会写四万次磁盘。
+但是，我用工具测试出来，磁盘能力也就两万左右，怎么能实现两万的 TPS？解释这个问题，就要用到组提交（group commit）机制了。
+这里，我需要先和你介绍日志逻辑序列号（log sequence number，LSN）的概念。
+LSN 是单调递增的，用来对应 redo log 的一个个写入点。每次写入长度为 length 的 redo log， LSN 的值就会加上 length。
+
+sync_relay_log
+有时候为了避免master.info和中继日志崩溃，在容忍额外的fsync()带来的开销，推荐设置
+sync_master_info = 1
+sync_relay_log = 1
+sync_relay_log_info = 1
+
+为什么 binlog cache 是每个线程自己维护的，而 redo log buffer 是全局共用的？
+回答：MySQL 这么设计的主要原因是，binlog 是不能“被打断的”。
+一个事务的 binlog 必须连续写，因此要整个事务完成后，再一起写到文件里。
+而 redo log 并没有这个要求，中间有生成的日志可以写到 redo log buffer 中。
+redo log buffer 中的内容还能“搭便车”，其他事务提交的时候可以被一起写到磁盘中。
+
+你看到的“binlog的记录”，也是从page cache读的哦。
+Page cache是操作系统文件系统上的
+
+为什么 binlog cache 是每个线程自己维护的，而 redo log buffer 是全局共用的？
+这个问题，感觉还有一点，binlog存储是以statement或者row格式存储的，
+而redo log是以page页格式存储的。page格式，天生就是共有的，而row格式，只跟当前事务相关
