@@ -1,0 +1,149 @@
+mysql主备一致
+因为 readonly 设置对超级 (super) 权限用户是无效的，而用于同步更新的线程，就拥有超级权限。
+
+在备库 B 上通过 change master 命令，设置主库 A 的 IP、端口、用户名、密码，以及要从哪个位置开始请求 binlog，这个位置包含文件名和日志偏移量。
+在备库 B 上执行 start slave 命令，这时候备库会启动两个线程，就是图中的 io_thread 和 sql_thread。
+其中 io_thread 负责与主库建立连接。
+主库 A 校验完用户名、密码后，开始按照备库 B 传过来的位置，从本地读取 binlog，发给 B。
+备库 B 拿到 binlog 后，写到本地文件，称为中转日志（relay log）。
+sql_thread 读取中转日志，解析出日志里的命令，并执行。
+这里需要说明，后来由于多线程复制方案的引入，sql_thread 演化成为了多个线程，跟我们今天要介绍的原理没有直接关系，暂且不展开。
+
+1、binlog格式为statement时，binlog记录的就是SQL的原文
+
+mysql> delete from t /*comment*/  where a>=4 and t_modified<='2018-11-10' limit 1;
+由于 statement 格式下，记录到 binlog 里的是语句原文，因此可能会出现这样一种情况：
+在主库执行这条 SQL 语句的时候，用的是索引 a；
+而在备库执行这条 SQL 语句的时候，却使用了索引 t_modified。因此，MySQL 认为这样写是有风险的。
+
+2、当 binlog_format 使用 row 格式的时候，binlog 里面记录了真实删除行的主键 id，
+这样 binlog 传到备库去的时候，就肯定会删除 id=4 的行，不会有主备删除不同行的问题。
+
+binlog的mixed格式
+因为有些 statement 格式的 binlog 可能会导致主备不一致，所以要使用 row 格式。
+但 row 格式的缺点是，很占空间。
+比如你用一个 delete 语句删掉 10 万行数据，用 statement 的话就是一个 SQL 语句被记录到 binlog 中，占用几十个字节的空间。
+但如果用 row 格式的 binlog，就要把这 10 万条记录都写到 binlog 中。
+这样做，不仅会占用更大的空间，同时写 binlog 也要耗费 IO 资源，影响执行速度。
+所以，MySQL 就取了个折中方案，也就是有了 mixed 格式的 binlog。
+mixed 格式的意思是，MySQL 自己会判断这条 SQL 语句是否可能引起主备不一致，如果有可能，就用 row 格式，否则就用 statement 格式。
+
+show global variables binlog_format：row
+
+数据恢复：
+因此，如果你的线上 MySQL 设置的 binlog 格式是 statement 的话，那基本上就可以认为这是一个不合理的设置。
+你至少应该把 binlog 的格式设置为 mixed。比如我们这个例子，设置为 mixed 后，就会记录为 row 格式；
+而如果执行的语句去掉 limit 1，就会记录为 statement 格式。
+当然我要说的是，现在越来越多的场景要求把 MySQL 的 binlog 格式设置成 row。这么做的理由有很多，我来给你举一个可以直接看出来的好处：恢复数据。
+
+
+mysql> insert into t values(10,10, now());
+如果我们把 binlog 格式设置为 mixed，你觉得 MySQL 会把它记录为 row 格式还是 statement 格式呢？
+答案是statement模式 ：原来 binlog 在记录 event 的时候，多记了一条命令：SET TIMESTAMP=1546103491。它用 SET TIMESTAMP 命令约定了接下来的 now() 函数的返回时间。
+我之前看过有人在重放 binlog 数据的时候，是这么做的：
+用 mysqlbinlog 解析出日志，然后把里面的 statement 语句直接拷贝出来执行。
+你现在知道了，这个方法是有风险的。因为有些语句的执行结果是依赖于上下文命令的，直接执行的结果很可能是错误的。
+
+解析binlog 用 binlog 来恢复数据的标准做法是，用 mysqlbinlog 工具解析出来，然后把解析结果整个发给 MySQL 执行。类似下面的命令：
+mysqlbinlog master.000001  --start-position=2738 --stop-position=2973 | mysql -h127.0.0.1 -P13000 -u$user -p$pwd;
+
+双 M 结构和 M-S 结构，其实区别只是多了一条线，即：节点 A 和 B 之间总是互为主备关系。这样在切换的时候就不用再修改主备关系。
+按照这个逻辑，如果我们设置了双 M 结构，日志的执行流就会变成这样：从节点 A 更新的事务，binlog 里面记的都是 A 的 server id；
+传到节点 B 执行一次以后，节点 B 生成的 binlog 的 server id 也是 A 的 server id；再传回给节点 A，A 判断到这个 server id 与自己的相同，就不会再处理这个日志。
+所以，死循环在这里就断掉了。
+
+binlog是高可用的基础
+binlog 在 MySQL 的各种高可用方案上扮演了重要角色。今天介绍的可以说是所有 MySQL 高可用方案的基础。
+在这之上演化出了诸如多节点、半同步、MySQL group replication 等相对复杂的方案。
+
+ show slave status
+ 它的返回结果里面会显示 seconds_behind_master，用于表示当前备库延迟了多少秒。
+
+ 主备系统时间延迟和relay log耗时
+ 备库连接到主库的时候，会通过执行 SELECT UNIX_TIMESTAMP() 函数来获得当前主库的系统时间。
+ 如果这时候发现主库的系统时间与自己不一致，备库在执行 seconds_behind_master 计算的时候会自动扣掉这个差值。
+ 需要说明的是，在网络正常的时候，日志从主库传给备库所需的时间是很短的，即 T2-T1 的值是非常小的。
+ 也就是说，网络正常情况下，主备延迟的主要来源是备库接收完 binlog 和执行完这个事务之间的时间差。
+ 所以说，主备延迟最直接的表现是，备库消费中转日志（relay log）的速度，比主库生产 binlog 的速度要慢。
+
+主从延迟来源：
+ 面试： 不要一次性地用 delete 语句删除太多数据。其实，这就是一个典型的大事务场景。
+ 大事务这种情况很好理解。因为主库上必须等事务执行完成才会写入 binlog，再传给备库。所以，如果一个主库上的语句执行 10 分钟，那这个事务很可能就会导致从库延迟 10 分钟。
+
+ 大事务：delete很多行，大表 DDL
+ 控制每个事务删除的数据量，分成多次删除。
+
+主从延迟来源：
+
+    1、大事务
+    2、有些部署条件下，备库所在机器的性能要比主库所在的机器性能差。
+        一般情况下，有人这么部署时的想法是，反正备库没有请求，所以可以用差一点儿的机器。
+        或者，他们会把 20 个主库放在 4 台机器上，而把备库集中在一台机器上。
+        其实我们都知道，更新请求对 IOPS 的压力，在主库和备库上是无差别的。
+        所以，做这种部署时，一般都会将备库设置为“非双 1”的模式。
+        但实际上，更新过程中也会触发大量的读操作。所以，当备库主机上的多个备库都在争抢资源的时候，就可能会导致主备延迟了。
+        做了对称部署以后，还可能会有延迟：备库的压力大。一般的想法是，主库既然提供了写能力，那么备库可以提供一些读能力。
+            或者一些运营后台需要的分析语句，不能影响正常业务，所以只能在备库上跑。
+
+
+        备库压力大：
+        一主多从。除了备库外，可以多接几个从库，让这些从库来分担读的压力。
+        通过 binlog 输出到外部系统，比如 Hadoop 这类系统，让外部系统提供统计类查询的能力。
+        其中，一主多从的方式大都会被采用。因为作为数据库系统，还必须保证有定期全量备份的能力。
+        而从库，就很适合用来做备份。备注：这里需要说明一下，从库和备库在概念上其实差不多。
+        在我们这个专栏里，为了方便描述，我把会在 HA 过程中被选成新主库的，称为备库，其他的称为从库。
+
+主从延迟大于1秒就不行
+
+ innodb_thread_concurrency 参数的目的是，控制 InnoDB 的并发线程上限。
+ 也就是说，一旦并发线程数达到这个值，InnoDB 在接收到新请求的时候，就会进入等待状态，直到有线程退出。
+
+ 我把 innodb_thread_concurrency 设置成 3，表示 InnoDB 只允许 3 个线程并行执行。
+ 而在我们的例子中，前三个 session 中的 sleep(100)，使得这三个语句都处于“执行”状态，以此来模拟大查询。
+ 你看到了， session D 里面，select 1 是能执行成功的，但是查询表 t 的语句会被堵住。
+ 也就是说，如果这时候我们用 select 1 来检测实例是否正常的话，是检测不出问题的。
+
+并发查询数 innodb_thread_concurrency
+ 公司测试库为0
+ 在 InnoDB 中，innodb_thread_concurrency 这个参数的默认值是 0，表示不限制并发线程数量。
+ 但是，不限制并发线程数肯定是不行的。因为，一个机器的 CPU 核数有限，线程全冲进来，上下文切换的成本就会太高。
+ 所以，通常情况下，我们建议把 innodb_thread_concurrency 设置为 64~128 之间的值。
+ 这时，你一定会有疑问，并发线程上限数设置为 128 够干啥，线上的并发连接数动不动就上千了。
+ 产生这个疑问的原因，是搞混了并发连接和并发查询。
+
+并发连接查询 max_connections  MySQL: ERROR 1040: Too many connections”
+Max_used_connections
+ 并发连接和并发查询，并不是同一个概念。
+ 你在 show processlist 的结果里，看到的几千个连接，指的就是并发连接。
+ 而“当前正在执行”的语句，才是我们所说的并发查询。
+ 并发连接数达到几千个影响并不大，就是多占一些内存而已。
+ 我们应该关注的是并发查询，因为并发查询太高才是 CPU 杀手。
+ 这也是为什么我们需要设置 innodb_thread_concurrency 参数的原因。
+
+ 死锁：
+ 然后，你可能还会想起我们在第 7 篇文章中讲到的热点更新和死锁检测的时候，如果把 innodb_thread_concurrency 设置为 128 的话，
+ 那么出现同一行热点更新的问题时，是不是很快就把 128 消耗完了，这样整个系统是不是就挂了呢？
+ 实际上，在线程进入锁等待以后，并发线程的计数会减一，也就是说等行锁（也包括间隙锁）的线程是不算在 128 里面的。MySQL 这样设计是非常有意义的。
+ 因为，进入锁等待的线程已经不吃 CPU 了；更重要的是，必须这么设计，才能避免整个系统锁死。
+
+ InnoDB 在设计时，遇到进程进入锁等待的情况时，将并发线程的计数减 1 的设计，是合理而且是必要的。
+
+ 为了能够检测 InnoDB 并发线程数过多导致的系统不可用情况，我们需要找一个访问 InnoDB 的场景。
+ 一般的做法是，在系统库（mysql 库）里创建一个表，比如命名为 health_check，里面只放一行数据，然后定期执行：
+mysql> select * from mysql.health_check;
+
+mysql> update mysql.health_check set t_modified=now();
+
+当主备双M架构时，server_id重复的问题
+mysql> CREATE TABLE `health_check` (
+  `id` int(11) NOT NULL,
+  `t_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+
+/* 检测命令 */
+insert into mysql.health_check(id, t_modified) values (@@server_id, now()) on duplicate key update t_modified=now();
+
+SELECT @@server_id
+
+kill query +thread_id
