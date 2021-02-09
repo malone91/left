@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
  ThreadLocalMap中就会出现key为null的Entry，
  就没有办法访问这些key为null的Entry的value，如果当前线程再迟迟不结束的话，
  这些key为null的Entry的value就会一直存在一条强引用链：
- Thread Ref -> Thread -> ThreaLocalMap -> Entry -> value
+ Thread Ref -> Thread -> ThreadLocalMap -> Entry -> value
  永远无法回收，造成内存泄漏。
  其实，ThreadLocalMap的设计中已经考虑到这种情况，
  也加上了一些防护措施：在ThreadLocal的get(),set(),remove()

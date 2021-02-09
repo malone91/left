@@ -146,4 +146,36 @@ insert into mysql.health_check(id, t_modified) values (@@server_id, now()) on du
 
 SELECT @@server_id
 
-kill query +thread_id
+在 MySQL 中有两个 kill 命令：一个是 kill query + 线程 id，表示终止这个线程中正在执行的语句；
+一个是 kill connection + 线程 id，这里 connection 可缺省，表示断开这个线程的连接，当然如果这个线程有语句正在执行，也是要先停止正在执行的语句的。
+
+不知道你在使用 MySQL 的时候，有没有遇到过这样的现象：使用了 kill 命令，却没能断开这个连接。
+再执行 show processlist 命令，看到这条语句的 Command 列显示的是 Killed。
+
+当对一个表做增删改查操作时，会在表上加 MDL 读锁。
+所以，session B 虽然处于 blocked 状态，但还是拿着一个 MDL 读锁的。如果线程被 kill 的时候，就直接终止，那之后这个 MDL 读锁就没机会被释放了。
+
+kill 并不是马上停止的意思，而是告诉执行线程说，这条语句已经不需要继续执行了，可以开始“执行停止的逻辑了”。
+其实，这跟 Linux 的 kill 命令类似，kill -N pid 并不是让进程直接停止，而是给进程发一个信号，然后进程处理这个信号，进入终止逻辑。
+只是对于 MySQL 的 kill 命令来说，不需要传信号量参数，就只有“停止”这个命令。实现上，当用户执行 kill query thread_id_B 时，MySQL 里处理 kill 命令的线程做了两件事：
+把 session B 的运行状态改成 THD::KILL_QUERY(将变量 killed 赋值为 THD::KILL_QUERY)；
+给 session B 的执行线程发一个信号。
+
+show processlist
+id       #ID标识，要kill一个语句的时候很有用
+command  #连接状态，一般是休眠（sleep），查询（query），连接（connect）
+state    #显示当前sql语句的状态
+系统分配的"connection_id"，可以使用函数connection_id()查看
+
+一个对象若只剩下弱引用，则该对象在GC时就会被回收
+强引用
+软引用
+弱引用
+虚引用
+
+如果一个ThreadLocal没有外部强引用来引用它，比如将ThreadLocal A 这个对象赋值为null，那么系统GC时ThreadLocal A 势必
+会被回收，这样一来，ThreadLocalMap中就会出现key为null的Entry，Java程序没有办法访问key为null的Entry的value,
+如果当前线程迟迟不结束的话，如线程池，那么这些key为null的Entry的value就会一直存在一条强引用链
+
+避免内存泄露的最好的做法是主动调用ThreadLocal对象的remove方法，将ThreadLocal对象中的值删除
+在set get方法时会清除ThreadLocalMap中key为null的value
