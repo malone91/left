@@ -315,8 +315,28 @@ public class ServiceA {
             sout(op to db)
             serviceB.methodB():
         }
+    }  methodA开启一个事务1，由于methodB为new，会先挂起methodA开启的事务1，然后开启自己的事务2，
+    再执行methodB，当methodB执行完后会先提交事务2，然后恢复对应的事务1的执行，最终提交事务1
+    当methodB发生异常，2会回滚，当时methodA不受影响。
 
-    }
+3 PROPAGATION_SUPPORTED 如果外层调用方开启了事务，那当前方法就加入到外层事务，
+如果外层不存在事务，那么当前方法也不会创建新事务，直接使用非事务方式执行
+
+4 PROPAGATION_NOT_SUPPORTED 不支持事务，相当于隔离
+
+5 PROPAGATION_NEVER 不支持事务,如果外层事务开启了事务，执行标有该注解的当前方法前会抛出异常
+
+6 PROPAGATION_MANDATORY 配置了这个传播性的方法只能在已存在事务的方法中被调用，
+如果在不存在事务的方法中被调用，就会抛出异常
+
+7 PROPAGATION_NESTED  避免所有嵌套事务回滚
+Required方法A调用Nested方法B，会新建一个保存点，B使用了A的事务，methodB抛出异常时，methodB 的插入操作会
+回滚，但是a的前边调用的方法不会回滚，因为执行B前建立了保存点，B的回滚只会回滚到这个保存点之前，B之后的A方法的
+逻辑会继续走下去
+
+是为了解决事务嵌套问题的
+常用前两个，第一个保证多个事务方法在一个事务中执行，保证方法的原子性
+第二个保证内层方法开启独立于外层方法的事务，当内层方法抛出异常回滚自己的事务时，不会影响外层事务方法的执行
 
 你在自己负责维护的 MySQL 里看到很多个线程都处于“Sending to client”这个状态，
 就意味着你要让业务开发同学优化查询结果，并评估这么多的返回结果是否合理。
@@ -350,3 +370,22 @@ InnoDB 内存管理用的是最近最少使用
 
 t1驱动表
 select * from t1 straight_join t2 on (t1.a=t2.a);
+
+理解了 MySQL 执行 join 的两种算法，现在我们再来试着回答文章开头的两个问题。
+第一个问题：能不能使用 join 语句？如果可以使用 Index Nested-Loop Join 算法，
+也就是说可以用上被驱动表上的索引，其实是没问题的；
+如果使用 Block Nested-Loop Join 算法，扫描行数就会过多。
+尤其是在大表上的 join 操作，这样可能要扫描被驱动表很多次，会占用大量的系统资源。所以这种 join 尽量不要用。
+所以你在判断要不要使用 join 语句时，
+就是看 explain 结果里面，Extra 字段里面有没有出现“Block Nested Loop”字样。
+
+第二个问题是：如果要使用 join，应该选择大表做驱动表还是选择小表做驱动表？
+如果是 Index Nested-Loop Join 算法，应该选择小表做驱动表；
+如果是 Block Nested-Loop Join 算法：在 join_buffer_size 足够大的时候，是一样的；
+在 join_buffer_size 不够大的时候（这种情况更常见），应该选择小表做驱动表。
+所以，这个问题的结论就是，总是应该使用小表做驱动表。
+
+在决定哪个表做驱动表的时候，应该是两个表按照各自的条件过滤，
+过滤完成之后，计算参与 join 的各个字段的总数据量，数据量小的那个表，就是“小表”，应该作为驱动表。
+
+NLJ Explain下，没用用index nested-loop 的全要优化
