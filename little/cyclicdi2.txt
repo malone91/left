@@ -289,4 +289,64 @@ public class ServiceA {
         sout(op to db);
         serviceB.methodB();//methodB和methodA 一样，methodB开启了事务，methodA开启了事务，两个事务会合并到一个事务当中
 
-    如果抛出异常，
+    B如果抛出异常，都会回滚，如果A try了B则也会回滚事务，因为REQUIRED语义
+    就是嵌套调用的多个事务方法在同一个事务内进行，只要有一个事务出现异常，就要回滚
+
+2 PROPAGATION_REQUIRES_NEW 每次都开启一个事务
+    如果外层调用方已经开启了事务，就先把外层的事务挂起，然后执行当前新事务
+    执行完毕后再恢复上层事务的执行
+    @Service
+    public class ServiceB {
+        @Transactional(rollbackFor=Exception.class, propagation=Requires_new)
+        public void methodB() {
+            insert()
+            sout(db)
+        }
+    }
+
+    @Service
+    public class ServiceA {
+        @Autowire
+        private ServiceB serviceB;
+
+        @Transactional(rollbackFor=Exception.class, propagation=Required)
+        public void methodA() {}
+            insert();
+            sout(op to db)
+            serviceB.methodB():
+        }
+
+    }
+
+你在自己负责维护的 MySQL 里看到很多个线程都处于“Sending to client”这个状态，
+就意味着你要让业务开发同学优化查询结果，并评估这么多的返回结果是否合理。
+
+“Sending data”并不一定是指“正在发送数据”，而可能是处于执行器过程中的任意阶段。
+比如，你可以构造一个锁等待的场景，就能看到 Sending data 状态。
+
+仅当一个线程处于“等待客户端接收结果”的状态，才会显示"Sending to client"；
+而如果显示成“Sending data”，它的意思只是“正在执行”。现在你知道了，
+查询的结果是分段发给客户端的，因此扫描全表，查询返回大量的数据，并不会把内存打爆。
+
+Buffer Pool加速查询
+因为这时候内存数据页的结果是最新的，直接读内存页就可以了。
+你看，这时候查询根本不需要读磁盘，直接从内存拿结果，速度是很快的。
+所以说，Buffer Pool 还有加速查询的作用。
+而 Buffer Pool 对查询的加速效果，依赖于一个重要的指标，即：内存命中率。
+
+查看BP内存命中率
+show engine innodb status : buffer pool hit rate
+
+一般情况下，一个稳定服务的线上系统，要保证响应时间符合要求的话，内存命中率要在 99% 以上。
+
+innodb_buffer_pool_size
+InnoDB Buffer Pool 的大小是由参数 innodb_buffer_pool_size 确定的，
+一般建议设置成可用物理内存的 60%~80%。
+
+innodb_buffer_pool_size 小于磁盘的数据量是很常见的。
+如果一个 Buffer Pool 满了，而又要从磁盘读入一个数据页，那肯定是要淘汰一个旧数据页的。
+InnoDB 内存管理用的是最近最少使用
+(Least Recently Used, LRU) 算法，这个算法的核心就是淘汰最久未使用的数据。
+
+t1驱动表
+select * from t1 straight_join t2 on (t1.a=t2.a);
