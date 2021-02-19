@@ -71,3 +71,11 @@ DDD
 软：职业规划，为什么离职，期待薪资，如何学习
 
 模拟压测，多线程，jprofile
+
+统计字符串出现的次数
+cat aaa.log | grep "JedisMovedDataException" | wc -l
+当前WEB服务器中联接次数最多的ip地址
+netstat -ntu | awk '{print $5}' |sort | uniq -c| sort -nr
+查看日志中访问次数最多的前10个IP
+cat access_log | cut -d ' ' -f 1 | sort |uniq -c | sort -nr | awk '{print $0 }' | head -n 10 | less
+cat  t1.log | sort
