@@ -1,0 +1,133 @@
+feign底层是使用了ribbon作为负载均衡的客户端，
+而ribbon的负载均衡也是依赖于eureka 获得各个服务的地址，所以要引入eureka-client。
+
+SpringbootApplication启动类加上@FeignClient注解，以及@EnableDiscoveryClient。
+
+这里还有一个 API 设计问题，有状态的 API 接口不应该定义为 Get。
+根据 HTTP 协议的规范，Get 请求用于数据查询，而 Post 才是把数据提交到服务端用于修改或新增。
+选择 Get 还是 Post 的依据，应该是 API 的行为，而不是参数大小。
+
+Get 请求应该是无状态或者幂等的，短信接口可以设计为支持幂等调用的
+
+前缀索引是有一定的局限性的，例如 order by 就无法使用前缀索引，无法把前缀索引用作覆盖索引。
+
+由于是select *操作，所以每条记录都需进行回表，当server层分析器发现between的范围太大时，
+使用辅助索引存在大量回表操作，所以觉得得不偿失，故而直接使用主键索引。
+如果想使用我们期望的索引，需要给server层分析器一个hint，force index(idx_order_id)
+
+走主键索引，优化器认为5000数据+回表5000次性能消耗要大于全表扫描
+
+经过日志分析，我们发现是作为幂等性校验的一张表经常出现死锁异常。
+我们和 DBA 讨论之后，初步怀疑是索引导致的死锁问题。
+后来我们在开发环境中模拟了相关操作，果然重现了该死锁异常。
+幂等性校验
+CREATE TABLE `order_record`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_no` int(11) DEFAULT NULL,
+  `status` int(4) DEFAULT NULL,
+  `create_date` datetime(0) DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_order_status`(`order_no`,`status`) USING BTREE
+) ENGINE = InnoDB
+show variables like 'autocommit'
+set autocommit = 0;设为手动提交
+事务1  select id from order_record where order_no = 4 for update;
+事务2  select id from order_record where order_no = 5 for update;
+事务1  insert into order_record (order_no, status, create) values (4,1, '2020-12-23 12:09:07');
+事务2  insert into order_record (order_no, status, create) values (5,1, '2020-12-23 12:09:07');
+rr隔离级别下产生死锁
+use information_schema;
+select * from innodb_lock_waits;
+select * from innodb_locks;
+行锁的具体实现算法有三种：record lock、gap lock 以及 next-key lock。
+record lock 是专门对索引项加锁；
+gap lock 是对索引项之间的间隙加锁；
+next-key lock 则是前面两种的组合，对索引项以其之间的间隙加锁。
+
+只在可重复读或以上隔离级别下的特定操作才会取得 gap lock 或 next-key lock，
+在 Select、Update 和 Delete 时，除了基于唯一索引的查询之外，
+其它索引查询时都会获取 gap lock 或 next-key lock，即锁住其扫描的范围。
+主键索引也属于唯一索引，所以主键索引是不会使用 gap lock 或 next-key lock。
+在 MySQL 中，gap lock 默认是开启的，
+即 innodb_locks_unsafe_for_binlog 参数值是 disable 的，且 MySQL 中默认的是 RR 事务隔离级别。
+事务1  insert into order_record (order_no, status, create) values (4,1, '2020-12-23 12:09:07');执行时
+加锁类型为 gap lock，这里的 gap 范围是 (4,+∞）
+执行查询 SQL 语句获取的 gap lock 并不会导致阻塞，
+而当我们执行以下插入 SQL 时，会在插入间隙上再次获取插入意向锁。
+insert intention
+插入意向锁其实也是一种 gap 锁，它与 gap lock 是冲突的，
+所以当其它事务持有该间隙的 gap lock 时，需要等待其它事务释放 gap lock 之后，才能获取到插入意向锁。
+以上事务 A 和事务 B 都持有间隙 (4,+∞）的 gap 锁，
+而接下来的插入操作为了获取到插入意向锁，都在等待对方事务的 gap 锁释放，于是就造成了循环等待，导致死锁。
+
+避免死锁最直观的方法就是在两个事务相互等待时，当一个事务的等待时间超过设置的某一阈值，
+就对这个事务进行回滚，另一个事务就可以继续执行了。
+这种方法简单有效，在 InnoDB 中，参数 innodb_lock_wait_timeout 是用来设置超时时间的。
+show  VARIABLES
+设置唯一索引
+
+如果两个更新事务使用了不同的辅助索引，或一个使用了辅助索引，一个使用了聚簇索引，就都有可能导致锁资源的循环等待。
+事务1 update order_record set status = 1 where order_no = 4;
+事务2 update order_record set status = 1 where id = 4;
+出现死锁的步骤：
+1获取idx_order_status非聚簇索引
+2获取主键索引的行锁
+1根据非聚簇索引获取的主键，获取主键索引的行锁
+2更新status列时，需要获取idx_order_status非聚簇索引
+
+尽量用主键更新字段。避免不必要的死锁发生
+
+1. 在编程中尽量按照固定的顺序来处理数据库记录，假设有两个更新操作，分别更新两条相同的记录，
+但更新顺序不一样，有可能导致死锁；
+2. 在允许幻读和不可重复读的情况下，尽量使用 RC 事务隔离级别，可以避免 gap lock 导致的死锁问题；
+3. 更新表时，尽量使用主键更新；
+4. 避免长事务，尽量将长事务拆解，可以降低与其它事务发生冲突的概率；
+5. 设置锁等待超时参数，我们可以通过 innodb_lock_wait_timeout 设置合理的等待超时阈值，
+特别是在一些高并发的业务中，我们可以尽量将该值设置得小一些，避免大量事务等待，占用系统资源，造成严重的性能开销。
+
+innodb_lock_wait_timeout避免死锁的SQL长时间等待
+MySQL默认开启了死锁检测机制，当检测到死锁后会选择一个最小(锁定资源最少得事务)的事务进行回滚
+但会消耗CPU
+Innodb提供了wait-for graph算法来主动进行死锁检测，我们可以通过innodb_deadlock_detect = on 打开死锁检测。
+
+共享锁和排他锁是属于行锁，意向锁都属于表锁
+
+binlog + redo log 两阶段提交保证持久性
+事务的回滚机制 保证原子性 要么全部提交成功 要么回滚
+undo log + MVCC 保证一致性 事务开始和结束的过程不会其它事务看到 为了并发可以适当破坏一致性
+
+InnoDB 既实现了行锁，也实现了表锁。行锁是通过索引实现的，
+如果不通过索引条件检索数据，那么 InnoDB 将对表中所有的记录进行加锁，其实就是升级为表锁了。
+
+只在可重复读或以上隔离级别下的特定操作才会取得 gap lock 或 next-key lock，
+在 Select 、Update 和 Delete 时，
+除了基于唯一索引的查询之外，其他索引查询时都会获取 gap lock 或 next-key lock，即锁住其扫描的范围。
+
+InnoDB 中的 RC 和 RR 隔离事务是基于多版本并发控制（MVCC）实现高性能事务。
+一旦数据被加上排他锁，其他事务将无法加入共享锁，且处于阻塞等待状态，
+如果一张表有大量的请求，这样的性能将是无法支持的。
+MVCC 对普通的 Select 不加锁，如果读取的数据正在执行 Delete 或 Update 操作，
+这时读取操作不会等待排它锁的释放，而是直接利用 MVCC 读取该行的数据快照（数据快照是指在该行的之前版本的数据，
+而数据快照的版本是基于 undo 实现的，undo 是用来做事务回滚的，记录了回滚的不同版本的行记录）。
+MVCC 避免了对数据重复加锁的过程，大大提高了读操作的性能。
+
+行锁的具体实现算法有三种：
+record lock、gap lock 以及 next-key lock。record lock 是专门对索引项加锁；
+gap lock 是对索引项之间的间隙加锁；
+next-key lock 则是前面两种的组合，对索引项以其之间的间隙加锁。
+
+MySQLQueryInterruptedException: Query execution was interrupted
+由于在抢购提交订单中开启了事务，在高并发时对一条记录进行更新的情况下，
+由于更新记录所在的事务还可能存在其他操作，导致一个事务比较长，当有大量请求进入时，
+就可能导致一些请求同时进入到事务中。又因为锁的竞争是不公平的，当多个事务同时对一条记录进行更新时，
+极端情况下，一个更新操作进去排队系统后，可能会一直拿不到锁，最后因超时被系统打断踢出。
+
+减小锁的粒度和锁的持有时间
+扣除库存放到最后
+又因为先新建订单和先扣除库存都不会影响业务，所以我们可以将扣除库存操作放到最后，
+也就是使用执行顺序 1，以此尽量减小锁的持有时间。
+
+在功能业务开发时，开发人员往往会为了追求开发速度，习惯使用默认的参数设置来实现业务功能。
+例如，在 service 方法中，你可能习惯默认使用 transaction，很少再手动变更事务隔离级别。
+但要知道，transaction 默认是 RR 事务隔离级别，在某些业务场景下，可能并不合适。
+因此，我们还是要结合具体的业务场景，进行考虑。
