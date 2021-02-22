@@ -131,3 +131,83 @@ MySQLQueryInterruptedException: Query execution was interrupted
 例如，在 service 方法中，你可能习惯默认使用 transaction，很少再手动变更事务隔离级别。
 但要知道，transaction 默认是 RR 事务隔离级别，在某些业务场景下，可能并不合适。
 因此，我们还是要结合具体的业务场景，进行考虑。
+
+也许你会想，我们把内存设置得越大越好，数据刷新到磁盘越快越好，不就对了吗？
+其实不然，内存设置过大，同样会带来新的问题。
+例如，InnoDB 中的数据和索引缓存，如果设置过大，就会引发 SWAP 页交换。
+还有数据写入到磁盘也不是越快越好，我们期望的是在高并发时，数据能均匀地写入到磁盘中，从而避免 I/O 性能瓶颈。
+SWAP 页交换：SWAP 分区在系统的物理内存不够用的时候，就会把物理内存中的一部分空间释放出来，
+以供当前运行的程序使用。被释放的空间可能来自一些很长时间没有什么操作的程序，
+这些被释放的空间的数据被临时保存到 SWAP 分区中，
+等到那些程序要运行时，再从 SWAP 分区中恢复保存的数据到内存中。
+
+sleep 会暂停当前线程，并进入阻塞状态，释放 CPU 资源，但是 sleep() 方法不会释放“锁标志”；
+yield 是将线程状态从运行转换到可执行状态,等待 CPU 的调度,不释放锁;
+join 底层是调用的 wait，所以会释放锁资源；
+wait 会暂停当前线程，并进入阻塞状态，释放 CPU 资源，并释放锁资源
+
+
+String str1= "abc";
+String str2= new String("abc");
+String str3= str2.intern();
+assertSame(str1==str2);
+assertSame(str2==str3);
+assertSame(str1==str3);
+
+并行流 Stream 的并行是依赖于ForkJoin 框架的
+Arrays.asList(1, 2, 3, 4, 5, 6, 7, 9, 8, 0, 1)
+        .stream()
+        .parallel()
+        .collect(Collectors.groupingBy(x -> x % 10))
+        .forEach((x, y) -> System.out.println(x + ":" + y));
+
+char16位，两个字节
+JDK9string内部采用byte[]
+我们知道一个 char 字符占 16 位，2 个字节。这个情况下，存储单字节编码内的字符（占一个字节的字符）就显得非常浪费。
+JDK1.9 的 String 类为了节约内存空间，于是使用了占 8 位，1 个字节的 byte 数组来存放字符串。
+
+综上已知：即使使用 + 号作为字符串的拼接，也一样可以被编译器优化成 StringBuilder 的方式。
+但再细致些，你会发现在编译器优化的代码中，每次循环都会生成一个新的 StringBuilder 实例，
+同样也会降低系统的性能。所以平时做字符串拼接的时候，我建议你还是要显示地使用 String Builder 来提升系统性能。
+如果在多线程编程中，String 对象的拼接涉及到线程安全，你可以使用 StringBuffer。
+但是要注意，由于 StringBuffer 是线程安全的，涉及到锁竞争，所以从性能上来说，要比 StringBuilder 差一些。
+
+
+String a =new String("abc").intern();
+String b = new String("abc").intern();
+
+if(a==b) {//true
+    System.out.print("a==b");
+}
+
+ab 工具用来测试 post get 接口请求非常便捷，可以通过参数指定请求数、并发数、请求参数等。
+例如，一个测试并发用户数为 10、请求数量为 100 的的 post 请求输入如下：
+
+ab -n 100  -c 10 -p 'post.txt' -T 'application/x-www-form-urlencoded' 'http://test.api.com/test/register'
+usernanme=test&password=test&sex=1
+
+get
+ab -c 10 -n 100 http://www.test.api.com/test/login?userName=test&password=test
+
+stream 并行流
+https://time.geekbang.org/column/article/98582
+
+Map<String, List<Student>> stuMap =
+stuList.stream().filter((Student s) -> s.getHeight() > 160) .collect(Collectors.groupingBy(Student ::getSex));
+
+
+Map<String, List<Student>> stuMap =
+stuList.parallelStream().filter((Student s) -> s.getHeight() > 160) .collect(Collectors.groupingBy(Student ::getSex));
+
+申请驾照时使用的证件类型：居民身份证
+机动车驾驶证证号：370826199303256831
+机动车驾驶证档案编号：110015221515
+准驾车型：小型汽车(C1)
+是否本地驾照： 是
+本人名下是否有在本市登记小客车： 否
+近五年在北京市连续缴纳个人所得税： 是
+近五年在北京市连续缴纳社会保险（养老保险）： 是
+手机号码：13621071329    固定电话：13621071329
+电子邮箱：13621071329@163.com
+联系地址：北京市朝阳区霞光里30号院2号楼4单元601
+邮    编：100027
