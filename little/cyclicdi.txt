@@ -1383,3 +1383,31 @@ Page cache是操作系统文件系统上的
 为什么 binlog cache 是每个线程自己维护的，而 redo log buffer 是全局共用的？
 这个问题，感觉还有一点，binlog存储是以statement或者row格式存储的，
 而redo log是以page页格式存储的。page格式，天生就是共有的，而row格式，只跟当前事务相关
+
+SpringCloud 用的是 Json 序列化，Dubbo 虽然兼容了 Java 序列化，但默认使用的是 Hessian 序列化
+
+fastjson gson jdk kryo protobuf protostuff hessian2 avro native-hession
+
+目前业内优秀的序列化框架有很多，而且大部分都避免了 Java 默认序列化的一些缺陷。
+例如，最近几年比较流行的 FastJson、Kryo、Protobuf、Hessian 等。
+我们完全可以找一种替换掉 Java 序列化，这里我推荐使用 Protobuf 序列化框架。Protobuf 是由 Google 推出且支持多语言的序列化框架，
+目前在主流网站上的序列化框架性能对比测试报告中，Protobuf 无论是编解码耗时，还是二进制流压缩大小，都名列前茅。
+
+问：这是一个使用单例模式实现的类，如果我们将该类实现 Java 的 Serializable 接口，它还是单例吗？
+如果要你来写一个实现了 Java 的 Serializable 接口的单例，你会怎么写呢？
+public class Singleton implements Serializable{
+
+    private final static Singleton singleInstance = new Singleton();
+
+    private Singleton(){}
+
+    public static Singleton getInstance(){
+       return singleInstance;
+    }
+}
+序列化会通过反射调用无参构造器返回一个新对象，破坏单例模式。
+解决方法是添加readResolve()方法，自定义返回对象策略。
+使用注册式单例：
+注册式单例有两种：一种式枚举登记，一种是容器缓存
+选择序列化四个原则：编解码效率、所占空间、安全、是否支持多语言
+ NIO是一种通信模型，并没有包含序列化的内容，可以自己选择使用哪一种序列化
