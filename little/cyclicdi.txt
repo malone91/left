@@ -185,6 +185,7 @@ ps -ef | grep java
  db.dcs_alliance_contract_test.find({"contractStartDate":{$gt:new Date("2020-10-22T00:00:00Z")}}).explain()
  
  mysql日志：general_log, redo log, bin log, 中继日志, 慢查询日志
+ 开启 general log 将所有到达MySQL Server的SQL语句记录下来
  show variables like '%log';
  back_log, general_log, innodb_api_enable_bin_log, innodb_locks_unsafe_for_bin_log,  log_statements_unsafe_for_binlog, log_sys_log, slow_query_log, sync_binlog, sync_relay_log
  每一个表是好几个B+树
