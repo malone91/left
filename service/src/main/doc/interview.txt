@@ -79,3 +79,6 @@ netstat -ntu | awk '{print $5}' |sort | uniq -c| sort -nr
 查看日志中访问次数最多的前10个IP
 cat access_log | cut -d ' ' -f 1 | sort |uniq -c | sort -nr | awk '{print $0 }' | head -n 10 | less
 cat  t1.log | sort
+
+ocqs list
+位的与或运算
