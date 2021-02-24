@@ -7,3 +7,13 @@
 第一 第二 第三范式
 
 PriorityQueue实现
+
+
+curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' -d '{ \
+   "endTime": "string", \
+   "identifyTag": "string", \
+   "pageNum": 0, \
+   "pageSize": 0, \
+   "start": 0, \
+   "startTime": "string" \
+ }' 'http://10.115.105.19:9100/fetch/contract/num'
