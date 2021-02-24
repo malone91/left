@@ -53,6 +53,16 @@ Request,session,application, and WebSocket scopes：这四种作用域只适用�
 Request scope：
                 该作用域的bean，在每个HTTP request都会新建一个实例，当一个request结束后，该实例也会被丢弃。
                 一次请求就会产生一个HTTP request，这次请求完成，request就结束。
+Session scope
+                该作用域和Request scope类似，在每一个HTTP Session都会新建一个实例。可以使用scope=”session”或者@SessionScope。
+                某一个用户在一段时间内，会使用同一个session，session有超时时间，过了超时时间则session失效。不同用户使用不同的session。
+Application scope
+                该作用域的bean，每一个web application会创建一个，是在ServletContext级别，该bean会作为ServletContext的属性。
+                一个web application可能会包含多个spring ApplicationContext，而singleton作用域是Spring ApplicationContext级别。
+                使用scopi=”application”或者@ApplicationScope表示。
+spring默认使用的是基于CGLIB的proxy，如果不想使用CGLIB，那么可以指定的proxy-target-class属性为false，这时会使用jdk的代理，不过jdk的代理，必须是基于interface的。
+<aop:scoped-proxy proxy-target-class="false"/>
+
 https://blog.csdn.net/chen2526264/article/details/80573996#15-bean-scopes-bean%E4%BD%9C%E7%94%A8%E5%9F%9F
 按道理，在循环依赖的环里，只要有一个bean，是通过属性注入依赖，并且是singleton，那么这个环就可以被打破，
 无论获取他们的顺序是怎样。但是我们在第五节得出过结论“只有当获取的第一个bean是通过属性注入依赖的singleton时，才会成功”，
@@ -102,17 +112,60 @@ private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(1
 /** Cache of early singleton objects: bean name to bean instance. */
 private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
 
+SneakyThrows 解决检查性异常，消除try...catch模板
 assertEquals(Short.valueOf("1"), converter.convert("1"));
         assertNull(converter.convert(null));
         assertThrows(NumberFormatException.class, () -> {
             converter.convert("ttt");
         });
-		
+BigDecimal.valueOf(1)  double
+
+查看程序使用的默认JVM参数
  java -XX:+PrintCommandLineFlags -version
- 
- wc -l gc.log
- wc -w gc.log
+
+ 默认垃圾回收器 -XX:+UseParallelGC
+ jdk1.7 默认垃圾收集器Parallel Scavenge（新生代）+Parallel Old（老年代） 与吞吐量关系密切
+ jdk1.8 默认垃圾收集器Parallel Scavenge（新生代）+Parallel Old（老年代） 与吞吐量关系密切
+ jdk1.9 默认垃圾收集器G1
+
+ CMS等收集器的关注点是尽可能地缩短垃圾收集时用户线程的停顿时间；
+ 而Parallel Scavenge又称吞吐量优先收集器，Parallel Scavenge是Java1.8默认的收集器，特点是并行的多线程回收，以吞吐量优先。
+ Parallel Scavenge收集器的目标则是达到一个可控制的吞吐量（Throughput）
+ Parallel Scavenge收集器的高吞吐量可以最高效率的利用CPU时间，尽快的完成程序的运算任务等，
+ 主要适合在后台运算而不是太多交互的任务（其不适合需要与用户交互的程序，良好的响应速度能提升用户的体验，此种场景CMS效果更好）
+
+Parallel Scavenge“复制算法
+Parallel Old参考：是Parallel Scavenge收集器的老年代版本，用于老年代的垃圾回收，但与Parallel Scavenge不同的是，它使用的是“标记-整理算法”。
+适用于注重于吞吐量及CPU资源敏感的场合。
+
+
+ wc -l gc.log 统计行
+ wc -w gc.log 统计字数
+ wc  -c: 统计字节数
+ wc  -m:统计字符数，不能与-c同时使用
+
+ 统计行数的命令
+ wc -l h.txt
+ sed '=' h.txt  | awk '{print $1}'
+ awk '{print NR $0}' h.txt  | tail -1 循环打印
+ grep -n "." h.txt 带行号打印
+
+赋予文件读写执行的权限 chmod 777 file
+ps -ef | grep java
+
+ 导出整个JVM 中内存信息
  jmap -dump:format=b,file=E:\heap.hprof 8864
+
+ 查看整个JVM内存状态
+ jmap -heap [pid]
+ 要注意的是在使用CMS GC 情况下，jmap -heap的执行有可能会导致JAVA 进程挂起
+
+ 查看JVM堆中对象详细占用情况
+ jmap -histo [pid]
+
+ jvm参数的配置： 比如FullGC的时候生成dump包
+ 监控工具生成：jvisualvm 工具里面有 Heap Dump的功能
+
  GC (Allocation Failure)  minor GC
  java -Dapp.home=/app/weblogic/scs -server -Xms4G -Xmx4G -Xmn2g -Xss256k -XX:PermSize=128m -XX:MaxPermSize=512m -Djava.awt.headless=true
  -Dfile.encoding=utf-8 -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -XX:AutoBoxCacheMax=20000

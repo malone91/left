@@ -83,3 +83,6 @@ cat  t1.log | sort
 
 ocqs list
 位的与或运算
+cron
+@Scheduled(cron = "0 0 * * * ?")
+@SchedulerLock(name = "scanBlockedSubCommitContractJob", lockAtMostFor = lockMaxTime, lockAtLeastFor = lockMaxTime)
