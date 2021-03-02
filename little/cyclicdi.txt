@@ -805,6 +805,7 @@ public void setBeanName(String beanName) {
     //ID保存BeanName的值
     id=beanName;
 }
+在xml中配置了bean的值能够输出user.getId有值，否则是空值
 
 
 另一类表级的锁是 MDL（metadata lock)。MDL 不需要显式使用，在访问一个表的时候会被自动加上。
