@@ -86,3 +86,69 @@ ocqs list
 cron
 @Scheduled(cron = "0 0 * * * ?")
 @SchedulerLock(name = "scanBlockedSubCommitContractJob", lockAtMostFor = lockMaxTime, lockAtLeastFor = lockMaxTime)
+
+索引失效，解决办法
+starter原理 https://www.cnblogs.com/hello-shf/p/10864977.html
+oom原因
+实现一个本地线程变量
+
+dubbo扩展,aop打日志
+@Activate(group = Constants.PROVIDER, order = -999)
+public class DubboTraceFilter implements Filter{
+    private static final Logger logger = LoggerFactory.getLogger(DubboTraceFilter.class);
+    public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        try {
+            FilterDesc filterReq = new FilterDesc() ;
+            filterReq.setInterfaceName(invocation.getInvoker().getInterface().getName());
+            filterReq.setMethodName(invocation.getMethodName()) ;
+            filterReq.setArgs(invocation.getArguments());
+            logger.debug("dubbo请求数据:"+JSON.toJSONString(filterReq));
+            Result result = invoker.invoke(invocation);
+            if (result.hasException() && invoker.getInterface() != GenericService.class){
+                logger.error("dubbo执行异常",result.getException());
+            }else {
+                logger.info("dubbo执行成功");
+                FilterDesc filterRsp = new FilterDesc() ;
+                filterRsp.setMethodName(invocation.getMethodName());
+                filterRsp.setInterfaceName(invocation.getInvoker().getInterface().getName());
+                filterRsp.setArgs(new Object[]{result.getValue()});
+                logger.debug("dubbo返回数据"+JSON.toJSONString(filterRsp));
+            }
+            return result ;
+        }catch (RuntimeException e){
+            logger.error("dubbo未知异常" + RpcContext.getContext().getRemoteHost()
+                    + ". service: " + invoker.getInterface().getName() + ", method: " + invocation.getMethodName()
+                    + ", exception: " + e.getClass().getName() + ": " + e.getMessage(), e);
+            throw e ;
+        }
+    }
+}
+
+springbot扩展点
+
+redis删除过程 集群模式 https://www.cnblogs.com/51life/p/10233340.html
+主从复制，哨兵模式和集群
+1支持主从复制，主机会自动将数据同步到从机，可以进行读写分离
+2当主服务器中断服务后，可以将一个从服务器升级为主服务器，以便继续提供服务，但是这个过程需要人工手动来操作。
+为此，Redis 2.8中提供了哨兵工具来实现自动化的系统监控和故障恢复功能。
+3redis的哨兵模式基本已经可以实现高可用，读写分离 ，但是在这种模式下每台redis服务器都存储相同的数据，很浪费内存，
+所以在redis3.0上加入了cluster模式，实现的redis的分布式存储，也就是说每台redis节点上存储不同的内容。
+
+mongo集群模式
+分片是数据跨多台机器存储，MongoDB使用分片来支持具有非常大的数据集和高吞吐量操作的部署，
+MongoDB支持通过分片进行水平扩展，多台服务器
+主从复制（Master-Slaver）、副本集（Replica Set）和分片（Sharding）模式。
+Master-Slaver 是一种主从副本的模式，目前已经不推荐使用。
+Replica Set 模式取代了 Master-Slaver 模式，是一种互为主从的关系。Replica Set 将数据复制多份保存，不同服务器保存同一份数据，在出现故障时自动切换，实现故障转移，在实际生产中非常实用。
+Sharding 模式适合处理大量数据，它将数据分开存储，不同服务器保存不同的数据，所有服务器数据的总和即为整个数据集。
+
+Springcloud组件
+服务发现——Netflix Eureka
+客服端负载均衡——Netflix Ribbon
+断路器——Netflix Hystrix
+服务网关——Netflix Zuul
+分布式配置——Spring Cloud Config
+
+走格子
+消息丢失
+状态机实现
