@@ -88,7 +88,12 @@ cron
 @SchedulerLock(name = "scanBlockedSubCommitContractJob", lockAtMostFor = lockMaxTime, lockAtLeastFor = lockMaxTime)
 
 索引失效，解决办法
-starter原理 https://www.cnblogs.com/hello-shf/p/10864977.html
+
+starter原理
+只需要引入官方提供的starter, 就可以直接使用, 免去了各种配置,
+原因在于spring-boot的自动发现,比如当classpath下面有tomcat-embedded.jar 时,
+对应的bean就会被加载.
+
 oom原因
 实现一个本地线程变量
 
