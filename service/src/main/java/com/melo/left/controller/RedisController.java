@@ -7,13 +7,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @RestController
 @RequestMapping("redis")
 public class RedisController {
+
+    public static void main(String[] args) {
+        HashMap<String, String> map = new HashMap<>(10);
+        System.out.println(map.size());
+        map.put("a", "a");
+        System.out.println(map.size());
+
+    }
 
     private static final TypeReference<List<ProgramLanguage>> TYPE_REFERENCE = new TypeReference<List<ProgramLanguage>>(){};
 
