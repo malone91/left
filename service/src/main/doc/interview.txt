@@ -88,7 +88,12 @@ cron
 @SchedulerLock(name = "scanBlockedSubCommitContractJob", lockAtMostFor = lockMaxTime, lockAtLeastFor = lockMaxTime)
 
 索引失效，解决办法
-starter原理 https://www.cnblogs.com/hello-shf/p/10864977.html
+
+starter原理
+只需要引入官方提供的starter, 就可以直接使用, 免去了各种配置,
+原因在于spring-boot的自动发现,比如当classpath下面有tomcat-embedded.jar 时,
+对应的bean就会被加载.
+
 oom原因
 实现一个本地线程变量
 
@@ -152,3 +157,28 @@ Springcloud组件
 走格子
 消息丢失
 状态机实现
+
+多线程，JVM
+ThreadLocal原理，使用场景
+JVM CPU100%
+ArrayList 线程不安全，数组越界异常
+HashMap为什么不安全，出现环形链表
+ConcurrentHashMap 7 8锁的不同
+NIO，buffer的方法 selector，channel
+类加载器
+AQS原理
+CountDownLatch原理
+Redis处理缓存击穿，默认值并设置短期的存活时间，定时器加载
+多路复用
+可重入锁
+
+mysql死锁，如何避免
+存放元素的数组，容量永远是2的N次方
+元素存放在数组中的索引位置，实际是 hash 对数组容量进行取余
+之所以是等效于取余，是因为 hash 的尾部与 1 做 & 运算会保持原来的值
+
+resize() 造成死循环
+参考 ：疫苗：JAVA HASHMAP的死循环
+
+其实，这个问题在 JDK1.8 已经被修复了 。死循环的原因是 resize() 时链表的倒序引起的，
+但是在 JDK1.8 中，插入元素并会再插入链表头部了，resize() 时也不会倒排了。

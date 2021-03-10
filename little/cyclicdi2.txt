@@ -169,9 +169,28 @@ state    #显示当前sql语句的状态
 
 一个对象若只剩下弱引用，则该对象在GC时就会被回收
 强引用
+垃圾回收机制绝不会回收它，即使内存不足时，JVM宁愿抛出OutOfMemoryError错误，
+使程序异常终止，也不会靠随意回收具有强引用的对象来解决内存不足问题。
+
 软引用
+Object obj = new Object();
+SoftReference sf = new SoftReference(obj);
+这里sf是对obj的一个软引用，
+如果内存空间足够，垃圾回收机制就不会回收它。
+
 弱引用
+Object obj = new Object();
+WeakReference wf = new WeakReference(obj);
+在垃圾回收器线程扫描它 所管辖的内存区域的过程中，
+一旦发现具有弱引用的对象，不管内存是否充足，都会被回收。
+可以作为缓存
+
 虚引用
+String str=new String("abc");
+ReferenceQueue queue=new ReferenceQueue();
+PhantomReference ref=new PhantomReference(str,queue);
+垃圾回收机制在回收对象时，如果发现还有虚引用，
+就会在回收对象之前，把这个虚引用加入到与之关联的引用队列中。
 
 如果一个ThreadLocal没有外部强引用来引用它，比如将ThreadLocal A 这个对象赋值为null，那么系统GC时ThreadLocal A 势必
 会被回收，这样一来，ThreadLocalMap中就会出现key为null的Entry，Java程序没有办法访问key为null的Entry的value,
