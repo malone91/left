@@ -1,0 +1,22 @@
+top 实时显示正在执行进程的CPU使用率、内存使用率、系统负载
+
+top -Hp pid 查看具体线程使用资源情况
+
+vmstat 1 3 ： 统计内存使用情况，CPU使用率、swap使用情况，观察进程上下文切换
+
+pidstat 深入到线程级别
+jps
+pidstat -p 28557 -r 1 3   -r监控内存，每秒采样3次
+
+查看堆内存使用情况 jstat -c pid
+jmap -heap pid
+jmap -histo[:live] pid | more
+jmap -dump:format=b,file= pid
+
+登录服务器找到占用 cpu过高线程堆栈信息
+通过 top 命令找到占用cpu最高的 pid[进程id]  定位到pid是 1469
+通过 top -Hp pid 查看进程中占用cpu过高的 tid[线程id]
+通过 printf  '%x/n' tid  把线程id转化为十六进制
+通过 jstack pid | grep tid -A 30 定位线程堆栈信息
+
+ jstat -gcutil pid 时间间隔 查看 gc  信息  毫秒
