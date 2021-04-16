@@ -7,12 +7,21 @@ vmstat 1 3 ： 统计内存使用情况，CPU使用率、swap使用情况，观�
 pidstat 深入到线程级别
 jps
 pidstat -p 28557 -r 1 3   -r监控内存，每秒采样3次
+jstack pid查看具体堆栈的信息
 
 查看堆内存使用情况 jstat -c pid
 jmap -heap pid
 jmap -histo[:live] pid | more
 jmap -dump:format=b,file= pid
 
+
+
+java -jar -Xms1000m -Xmx4000m
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/tmp/heapdump.hprof
+-XX:+PrintGCTimeStamps
+-XX:+PrintGCDetails
+-Xloggc:/tmp/heapTest.log   gc日志
 登录服务器找到占用 cpu过高线程堆栈信息
 通过 top 命令找到占用cpu最高的 pid[进程id]  定位到pid是 1469
 通过 top -Hp pid 查看进程中占用cpu过高的 tid[线程id]
@@ -20,3 +29,36 @@ jmap -dump:format=b,file= pid
 通过 jstack pid | grep tid -A 30 定位线程堆栈信息
 
  jstat -gcutil pid 时间间隔 查看 gc  信息  毫秒
+
+ jvm old区占用过高排查思路
+ top查看占用cpu高的进程
+ jstat -gcutil pid 时间间隔 查看gc状况
+ jmap -dump:format=b,file=name.dump pid  导出dump文件
+ 用visualVM分析dump文件
+
+
+HashMap的扩容的优化技巧
+hash = h-(key.hashCode())^ h >>>16
+尽量打乱 hashCode 真正参与运算的低 16 位。
+15 的二进制为 0000000000000000000000000001111
+假设对象 A 的 hashCode 为 1000010001110001000001111000000，
+对象 B 的 hashCode 为 0111011100111000101000010100000，你会发现上述与运算结果都是 0。
+(n-1) & hash
+
+编码中也可以优化 HashMap 的性能，例如，重写 key 值的 hashCode() 方法，
+降低哈希冲突，从而减少链表的产生，高效利用哈希表，达到提高性能的效果
+
+JDK 1.8 中，HashMap 对扩容操作做了优化。由于扩容数组的长度是 2 倍关系，
+所以对于假设初始 tableSize = 4 要扩容到 8 来说就是 0100 到 1000 的变化（左移一位就是 2 倍），
+在扩容中只用判断原来的 hash 值和左移动的一位（newtable 的值）按位与操作是 0 或 1 就行，
+0 的话索引不变，1 的话索引变成原索引加上扩容前数组。之所以能通过这种“与运算“来重新分配索引，
+是因为 hash 值本来就是随机的，而 hash 按位与上 newTable 得到的 0（扩容前的索引位置）和
+ 1（扩容前索引位置加上扩容前数组长度的数值索引处）就是随机的，
+所以扩容的过程就能把之前哈希冲突的元素再随机分布到不同的索引中去。
+
+减少哈希冲突，均匀分布元素
+
+消息队列了解吗
+依次打印数字
+Redis的数据结构怎么升级 比如map
+OOM的场景
