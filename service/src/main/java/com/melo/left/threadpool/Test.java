@@ -17,7 +17,7 @@ public class Test {
         );
 
         //也可以将该task放到Thread中
-        FutureTask<Integer> futureTask = new FutureTask<Integer>(
+        FutureTask<Integer> futureTask = new FutureTask<>(
                 () -> 1 + 2
         );
         ExecutorService executorService = Executors.newFixedThreadPool(2);
