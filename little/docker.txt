@@ -1,0 +1,85 @@
+三个概念：image，container，repository
+image：root file system，static definition， layer by layer， virtual conception， image reuse， class
+container：instance， running instance， create-start-stop-delete-resume， process
+repository：<仓库名>:<标签> Docker Registry比如Docker Hub，各种镜像
+容器的实质是进程，但与直接在宿主执行的进程不同，容器进程运行于属于自己的独立的 命名空间。
+因此容器可以拥有自己的 root 文件系统、自己的网络配置、自己的进程空间，甚至自己的用户 ID 空间。
+容器内的进程是运行在一个隔离的环境里，使用起来，就好像是在一个独立于宿主的系统下操作一样。
+这种特性使得容器封装的应用比直接在宿主运行更加安全。也因为这种隔离的特性，
+很多人初学 Docker 时常常会混淆容器和虚拟机。
+前面讲过镜像使用的是分层存储，容器也是如此。每一个容器运行时，是以镜像为基础层，
+在其上创建一个当前容器的存储层，我们可以称这个为容器运行时读写而准备的存储层为 容器存储层。
+容器存储层的生存周期和容器一样，容器消亡时，容器存储层也随之消亡。
+因此，任何保存于容器存储层的信息都会随容器删除而丢失。
+
+按照 Docker 最佳实践的要求，容器不应该向其存储层内写入任何数据，容器存储层要保持无状态化。
+所有的文件写入操作，都应该使用 数据卷（Volume）、或者 绑定宿主目录，
+在这些位置的读写会跳过容器存储层，直接对宿主（或网络存储）发生读写，其性能和稳定性更高。
+数据卷的生存周期独立于容器，容器消亡，数据卷不会消亡。因此，使用数据卷后，
+容器删除或者重新运行之后，数据却不会丢失。
+
+docker --version
+docker info 查看镜像仓库地址
+docker pull ubuntu:18.04
+docker run -it --rm ubuntu:18.04 bash 交互式操作，终端 容器退出后将其删除，避免浪费空间，just a test bash是命令，交互式shell使用bash
+cat /etc/os-release
+pwd ll
+exit 退出该容器
+
+docker image ls所有顶层镜像
+docker images
+docker system df
+docker image ls -a所有中间层镜像
+
+docker image ls ubuntu(:18.04)
+docker image ls -f since=mongo:3.2
+
+特定格式显示
+docker image ls -q
+docker image rm image_id 前三位，短id
+docker image rm rep:tag
+
+
+docker pull nginx   latest
+docker run --name webserver -d -p 80:80 nginx 设置容器名，映射80端口
+localhost
+docker exec -it webserver bash进入容器修改内容 比如欢迎页
+echo 'hello melo' > /usr/share/nginx/html/index.html
+exit
+修改了文件也就是修改了容器的存储层 注意，存储层无状态
+docker diff webserver
+如果要将其保存下来需要形成镜像
+docker commit将容器的存储层保存下来形成新的镜像
+docker commit --author "melo" --message "modify default page" webserver nginx:melo
+
+docker image ls nginx
+docker run --name melo_web -d -p 81:80 nginx:melo
+
+docker commit 慎用，黑箱操作
+
+Dockerfile定制镜像
+是一个文本文件，包含一条条的指令，每一条指令构建一层，每一条指令描述如何构建
+eg:
+Dockerfile：
+mkdir mynginx
+cd mynginx
+touch Dockerfile:
+    FROM nginx  指定基础镜像
+    RUN echo 'hello melo' > /usr/share/nginx/html/index.html
+
+FROM scratch创建空白镜像，从0开始更轻巧
+
+run后用&&连接，搞为一层
+
+Dockerfile所在目录执行：docker build -t nginx:v3 . 表示当前目录
+一般会将Dockerfile置于一个空目录下或者项目根目录
+
+COPY复制上下文路径目录下的文件， build时会指定上下文路径
+
+从标准输入中读取Dockerfile进行构建
+    docker build - < Dockerfile
+    cat Dockerfile | docker build -
+
+mkdir -p /a/a  递归创建文件夹，如果不存在则。。。
+
+ENTRYPOINT 入口点
