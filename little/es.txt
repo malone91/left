@@ -130,3 +130,47 @@ curl -XPOST http://localhost:9200/index/_search  -H 'Content-Type:application/js
     }
 }
 '
+
+
+kibana连接es
+kibana.yml：
+    server.port: 5601
+    server.host: "127.0.0.1"
+    server.name: melo
+    elasticsearch.hosts: ["http://localhost:9200/"]
+启动 访问5601端口
+
+kibana操作es
+dev_tool下
+1、GET _search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+2、
+PUT /ecommerce/product/1
+{
+    "name" : "gaolujie yagao",
+    "desc" :  "gaoxiao meibai",
+    "price" :  30,
+    "producer" :      "gaolujie producer",
+    "tags": [ "meibai", "fangzhu" ]
+}
+PUT /ecommerce/product/2
+{
+    "name" : "jiajieshi yagao",
+    "desc" :  "youxiao fangzhu",
+    "price" :  25,
+    "producer" :      "jiajieshi producer",
+    "tags": [ "fangzhu" ]
+}
+PUT /ecommerce/product/3
+{
+    "name" : "zhonghua yagao",
+    "desc" :  "caoben zhiwu",
+    "price" :  40,
+    "producer" :      "zhonghua producer",
+    "tags": [ "qingxin" ]
+}
+3、查询
