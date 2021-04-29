@@ -1,0 +1,132 @@
+企业对数据的查询：列表，详情，统计
+ES 本质上是一个支持全文搜索的分布式内存数据库，特别适合用于构建搜索系统。
+ES 是一个用 Java 开发的服务端程序
+ElasticSearch.bat启动   全文搜索引擎
+localhost:9200
+config/elasticsearch.yml network.host:0.0.0.0
+
+本质上是一个分布式数据库，允许多态服务器协同工作，每台服务器可以运行多个Elastic实例，实例也叫节点
+一组节点构成一个集群
+
+Elastic会索引所有字段，经过处理后写入一个反向索引 Inverted Index 查找数据直接查找该索引
+
+localhost:9200/_cat/indices?v  当前节点的所有Index
+
+接近实时NRT 弹性搜索
+
+一个索引：类似于传统关系数据库中的一个数据库，存储关系型文档的地方，逻辑存储，为快速全文检索做准备
+索引一个文档：存储一个文档到一个索引以便它可以被检索和查询到
+倒排索引
+文档：存在es上的主要实体叫文档
+es面向文档，存储整个对象或者文档，索引每个文档的内容使之可以被检索
+对文档进行索引，检索，排序，过滤，而不是行列数据
+
+curl -X GET 'http://localhost:9200/_count?pretty' -d '
+    {"query":{"match_all":{}}}
+'
+
+检测集群是否健康 curl -X GET 'http://localhost:9200/_cluster/health?pretty'
+获取集群节点 curl 'localhost:9200/_cat/nodes?v'
+列出所有索引 curl 'localhost:9200/_cat/indices?v'
+查询索引数据 curl 'localhost:9200/_search?pretty=true'
+
+query_string语法
+curl -XGET 'localhost:9200/product/spu/_search?pretty=true' -d '
+    {
+        "query":{"query_string":{"query": "brandName:本田"}}
+    }
+'
+
+{
+    "from" : 0,
+    "size" : 15,
+    "query" : {
+        "bool": {
+            "must" : [{"range" : {"create_time" : {"from":"2016-08-11T00:00:00+0800","to":"2016-08-11T23:59:00+0800"}}},{"term" : {"user_id" : "37540"}},{"terms" : {"status" : [2,1,0]}}]
+        }
+    },
+    "sort" : [{"create_time" : "desc"}],
+    "highlight" : {
+    }
+}
+select * from db/table where
+create_time between ('2016-08-11 00:00:00' and '2016-08-11 23:59:59')
+ and user_id = 37540 and status in (2, 1, 0);
+
+单表的count也很快，es本身会把单个字段的一种值当作一个term，然后会记录这个term出现的所有文档和
+出现次数
+
+es不是数据库，联表查询麻烦
+ES+MYSQL 解决搜索存储的问题
+
+数据库不适合做搜索，搜索的核心需求是全文匹配，此时数据库的索引根本派不上用场
+ES怎么解决搜索的问题呢？倒排索引
+商品的大标题，倒排索引的表以单词作为索引的key，每个单词的倒排索引的值是一个商品唯一主键列表。
+这个倒排索引怎么构建的呢？当我们往 ES 写入商品记录的时候，ES 会先对需要搜索的字段，
+也就是商品标题进行分词。分词就是把一段连续的文本按照语义拆分成多个单词。
+然后 ES 按照单词来给商品记录做索引，就形成了上面那个表一样的倒排索引。、
+
+搜索苹果时手机的匹配度更高些
+这个搜索过程，其实就是对上面的倒排索引做了二次查找，一次找“苹果”，一次找“手机”。
+注意，整个搜索过程中，我们没有做过任何文本的模糊匹配。
+
+index 表
+document 行
+field 列
+mapping 表结构
+
+在 ES 里面，数据的逻辑结构类似于 MongoDB，每条数据称为一个 DOCUMENT，简称 DOC。
+DOC 就是一个 JSON 对象，DOC 中的每个 JSON 字段，在 ES 中称为 FIELD，
+把一组具有相同字段的 DOC 存放在一起，存放它们的逻辑容器叫 INDEX，
+这些 DOC 的 JSON 结构称为 MAPPING。
+这里面最不好理解的就是这个 INDEX，它实际上类似于 MySQL 中表的概念，
+而不是我们通常理解的用于查找数据的索引。
+
+IK中文分词插件
+1、optional 1 - download pre-build package from here: https://github.com/medcl/elasticsearch-analysis-ik/releases
+2、create plugin folder cd your-es-root/plugins/ && mkdir ik
+3、unzip plugin to folder your-es-root/plugins/ik
+4、restart elasticsearch
+5、validate：
+localhost:9200/_cat/plugins  DESKTOP-UAV67SV analysis-ik 7.12.0
+localhost:9200/_cat/nodes
+curl -X POST "localhost:9200/_analyze?pretty" -H 'Content-Type: application/json' -d '{ "analyzer": "ik_smart", "text": "极客时间" }'
+6、create a index: curl -XPUT http://localhost:9200/index
+7、create a mapping:存放之前定义mapping
+curl -XPOST http://localhost:9200/index/_mapping -H 'Content-Type:application/json' -d'
+{
+        "properties": {
+            "content": {
+                "type": "text",
+                "analyzer": "ik_max_word",
+                "search_analyzer": "ik_smart"
+            }
+        }
+
+}'
+8、index some docs
+curl -XPOST http://localhost:9200/index/_create/1 -H 'Content-Type:application/json' -d'
+{"content":"美国留给伊拉克的是个烂摊子吗"}
+'
+curl -XPOST http://localhost:9200/index/_create/2 -H 'Content-Type:application/json' -d'
+{"content":"公安部：各地校车将享最高路权"}
+'
+curl -XPOST http://localhost:9200/index/_create/3 -H 'Content-Type:application/json' -d'
+{"content":"中韩渔警冲突调查：韩警平均每天扣1艘中国渔船"}
+'
+curl -XPOST http://localhost:9200/index/_create/4 -H 'Content-Type:application/json' -d'
+{"content":"中国驻洛杉矶领事馆遭亚裔男子枪击 嫌犯已自首"}
+'
+9、query with highlighting
+curl -XPOST http://localhost:9200/index/_search  -H 'Content-Type:application/json' -d'
+{
+    "query" : { "match" : { "content" : "中国" }},
+    "highlight" : {
+        "pre_tags" : ["<tag1>", "<tag2>"],
+        "post_tags" : ["</tag1>", "</tag2>"],
+        "fields" : {
+            "content" : {}
+        }
+    }
+}
+'

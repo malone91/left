@@ -1257,8 +1257,10 @@ mysql> select * from tradelog where  CAST(tradid AS signed int) = 110717;
 如果是考察优化器怎么实现的，你可以这么想，每次在树搜索里面做一次查找都是log(n), 所以对比的是100*log(10000)和 10000*log(100)哪个小，
 显然是前者，所以结论应该是让小表驱动大表。
 
-Using index是覆盖索引
-Using index condition 是索引下推
+Using where 通过索引回表查询数据
+Using index是覆盖索引，不回表
+Using index condition 是索引下推，先条件过滤索引得到符合条件的数据行然后找到符合条件的数据行，然后用其他where筛选
+Using index condition
 
 感觉要使用索引就不能“破坏”索引原有的顺序，这节的函数操作，隐式转换都“破坏”了原有的顺序。
 前一节的select * from t where city in in (“杭州”," 苏州 ") order by name limit 100;

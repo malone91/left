@@ -1,0 +1,10 @@
+alter table t add index index(name(6));
+select count(distinct name) as qufendu from t;
+使用前缀索引却用不上覆盖索引了
+mysql> select * from t where a between 10000 and 20000;
+
+set long_query_time=0;
+select * from t where a between 10000 and 20000; /*Q1*/
+select * from t force index(a) where a between 10000 and 20000;/*Q2*/
+
+扫描的行数越少，意味着访问磁盘数据的次数越少，消耗的 CPU 资源越少。
