@@ -174,3 +174,28 @@ PUT /ecommerce/product/3
     "tags": [ "qingxin" ]
 }
 3、查询
+
+head插件访问 http://localhost:9200/_plugin/head/
+
+https://www.cnblogs.com/mentiantian/p/10395400.html
+开始安装head
+① 进入安装目录下的config目录，修改elasticsearch.yml文件.在文件的末尾加入以下代码。
+
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+node.master: true
+node.data: true
+
+②双击elasticsearch.bat重启es。
+
+安装grunt
+执行 npm install -g grunt-cli 安装grunt ，安装完成后执行grunt -version查看是否安装成功
+
+解压到指定文件夹下elasticsearch-head-master\Gruntfile.js
+ connect server options 在对应的位置加上hostname:'*'
+ 项目目录下执行：
+ npm install 安装完成后执行grunt server
+
+http://localhost:9200/song001/list001/5/ 索引/索引类型/id
+PUT 修改
+{"number":32768,"singer":"杨坤","size":"777","song":"今夜21岁","tag":"中国好声音","timelen":319}
