@@ -49,3 +49,5 @@ city_name|||varchar|||[:order_enum(file://names.txt)]
 
 其中code.txt为城市编码，names.txt为城市名，两个文件行数相同，每行内容一一对应
 用order_enum按顺序取值，能确保两个字段取得城市编码和城市名一一对应
+
+datafaker es localhost:9200 index/type 100 --auth elastic:elastic --meta meta.txt
