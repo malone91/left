@@ -199,3 +199,666 @@ node.data: true
 http://localhost:9200/song001/list001/5/ 索引/索引类型/id
 PUT 修改
 {"number":32768,"singer":"杨坤","size":"777","song":"今夜21岁","tag":"中国好声音","timelen":319}
+
+索引：
+keyword：存储数据时候，不会分词建立索引
+text：存储数据时候，会自动分词，并生成索引
+（这是很智能的，但在有些字段里面是没用的，所以对于有些字段使用text则浪费了空间）。
+
+编辑设置
+{
+  "index.blocks.read_only_allow_delete": "false",
+  "index.priority": "1",
+  "index.query.default_field": [
+    "*"
+  ],
+  "index.write.wait_for_active_shards": "1",
+  "index.refresh_interval": "30s",
+  "index.indexing.slowlog.level": "info",
+  "index.indexing.slowlog.threshold.index.warn": "1s",
+  "index.indexing.slowlog.threshold.index.trace": "1ms",
+  "index.indexing.slowlog.threshold.index.debug": "100ms",
+  "index.indexing.slowlog.threshold.index.info": "500ms",
+  "index.indexing.slowlog.source": "false",
+  "index.translog.flush_threshold_size": "512m",
+  "index.translog.sync_interval": "30s",
+  "index.translog.durability": "async",
+  "index.unassigned.node_left.delayed_timeout": "5m",
+  "index.number_of_replicas": "1",
+  "index.lifecycle.name": "30Del",
+  "index.lifecycle.rollover_alias": "online-2021.05.06",
+  "index.lifecycle.indexing_complete": "true",
+  "index.routing.allocation.require.node_type": "warm",
+  "index.routing.allocation.total_shards_per_node": "2",
+  "index.search.slowlog.level": "info",
+  "index.search.slowlog.threshold.fetch.warn": "1s",
+  "index.search.slowlog.threshold.fetch.trace": "1ms",
+  "index.search.slowlog.threshold.fetch.debug": "500ms",
+  "index.search.slowlog.threshold.fetch.info": "800ms",
+  "index.search.slowlog.threshold.query.warn": "1m",
+  "index.search.slowlog.threshold.query.trace": "1ms",
+  "index.search.slowlog.threshold.query.debug": "1s",
+  "index.search.slowlog.threshold.query.info": "5s"
+}
+
+统计
+{
+  "_shards": {
+    "total": 6,
+    "successful": 6,
+    "failed": 0
+  },
+  "stats": {
+    "uuid": "x23l_5cFRsyAwO4sZOBBRw",
+    "primaries": {
+      "docs": {
+        "count": 201966650,
+        "deleted": 0
+      },
+      "store": {
+        "size_in_bytes": 57579380362
+      },
+      "indexing": {
+        "index_total": 0,
+        "index_time_in_millis": 0,
+        "index_current": 0,
+        "index_failed": 0,
+        "delete_total": 0,
+        "delete_time_in_millis": 0,
+        "delete_current": 0,
+        "noop_update_total": 0,
+        "is_throttled": false,
+        "throttle_time_in_millis": 0
+      },
+      "get": {
+        "total": 0,
+        "time_in_millis": 0,
+        "exists_total": 0,
+        "exists_time_in_millis": 0,
+        "missing_total": 0,
+        "missing_time_in_millis": 0,
+        "current": 0
+      },
+      "search": {
+        "open_contexts": 0,
+        "query_total": 892,
+        "query_time_in_millis": 237496,
+        "query_current": 0,
+        "fetch_total": 25,
+        "fetch_time_in_millis": 3152,
+        "fetch_current": 0,
+        "scroll_total": 0,
+        "scroll_time_in_millis": 0,
+        "scroll_current": 0,
+        "suggest_total": 0,
+        "suggest_time_in_millis": 0,
+        "suggest_current": 0
+      },
+      "merges": {
+        "current": 0,
+        "current_docs": 0,
+        "current_size_in_bytes": 0,
+        "total": 0,
+        "total_time_in_millis": 0,
+        "total_docs": 0,
+        "total_size_in_bytes": 0,
+        "total_stopped_time_in_millis": 0,
+        "total_throttled_time_in_millis": 0,
+        "total_auto_throttle_in_bytes": 62914560
+      },
+      "refresh": {
+        "total": 21,
+        "total_time_in_millis": 0,
+        "external_total": 6,
+        "external_total_time_in_millis": 0,
+        "listeners": 0
+      },
+      "flush": {
+        "total": 3,
+        "periodic": 0,
+        "total_time_in_millis": 0
+      },
+      "warmer": {
+        "current": 0,
+        "total": 3,
+        "total_time_in_millis": 0
+      },
+      "query_cache": {
+        "memory_size_in_bytes": 25422809,
+        "total_count": 10852,
+        "hit_count": 152,
+        "miss_count": 10700,
+        "cache_size": 102,
+        "cache_count": 102,
+        "evictions": 0
+      },
+      "fielddata": {
+        "memory_size_in_bytes": 0,
+        "evictions": 0
+      },
+      "completion": {
+        "size_in_bytes": 0
+      },
+      "segments": {
+        "count": 99,
+        "memory_in_bytes": 52336058,
+        "terms_memory_in_bytes": 41951238,
+        "stored_fields_memory_in_bytes": 10355256,
+        "term_vectors_memory_in_bytes": 0,
+        "norms_memory_in_bytes": 19008,
+        "points_memory_in_bytes": 0,
+        "doc_values_memory_in_bytes": 10556,
+        "index_writer_memory_in_bytes": 0,
+        "version_map_memory_in_bytes": 0,
+        "fixed_bit_set_memory_in_bytes": 0,
+        "max_unsafe_auto_id_timestamp": 1620316779986,
+        "file_sizes": {}
+      },
+      "translog": {
+        "operations": 0,
+        "size_in_bytes": 495,
+        "uncommitted_operations": 0,
+        "uncommitted_size_in_bytes": 495,
+        "earliest_last_modified_age": 0
+      },
+      "request_cache": {
+        "memory_size_in_bytes": 0,
+        "evictions": 0,
+        "hit_count": 0,
+        "miss_count": 98
+      },
+      "recovery": {
+        "current_as_source": 0,
+        "current_as_target": 0,
+        "throttle_time_in_millis": 17876
+      }
+    },
+    "total": {
+      "docs": {
+        "count": 403933300,
+        "deleted": 0
+      },
+      "store": {
+        "size_in_bytes": 115158760724
+      },
+      "indexing": {
+        "index_total": 0,
+        "index_time_in_millis": 0,
+        "index_current": 0,
+        "index_failed": 0,
+        "delete_total": 0,
+        "delete_time_in_millis": 0,
+        "delete_current": 0,
+        "noop_update_total": 0,
+        "is_throttled": false,
+        "throttle_time_in_millis": 0
+      },
+      "get": {
+        "total": 0,
+        "time_in_millis": 0,
+        "exists_total": 0,
+        "exists_time_in_millis": 0,
+        "missing_total": 0,
+        "missing_time_in_millis": 0,
+        "current": 0
+      },
+      "search": {
+        "open_contexts": 0,
+        "query_total": 1791,
+        "query_time_in_millis": 454427,
+        "query_current": 0,
+        "fetch_total": 56,
+        "fetch_time_in_millis": 8965,
+        "fetch_current": 0,
+        "scroll_total": 0,
+        "scroll_time_in_millis": 0,
+        "scroll_current": 0,
+        "suggest_total": 0,
+        "suggest_time_in_millis": 0,
+        "suggest_current": 0
+      },
+      "merges": {
+        "current": 0,
+        "current_docs": 0,
+        "current_size_in_bytes": 0,
+        "total": 0,
+        "total_time_in_millis": 0,
+        "total_docs": 0,
+        "total_size_in_bytes": 0,
+        "total_stopped_time_in_millis": 0,
+        "total_throttled_time_in_millis": 0,
+        "total_auto_throttle_in_bytes": 125829120
+      },
+      "refresh": {
+        "total": 30,
+        "total_time_in_millis": 1,
+        "external_total": 12,
+        "external_total_time_in_millis": 0,
+        "listeners": 0
+      },
+      "flush": {
+        "total": 6,
+        "periodic": 0,
+        "total_time_in_millis": 0
+      },
+      "warmer": {
+        "current": 0,
+        "total": 6,
+        "total_time_in_millis": 0
+      },
+      "query_cache": {
+        "memory_size_in_bytes": 50080702,
+        "total_count": 25059,
+        "hit_count": 421,
+        "miss_count": 24638,
+        "cache_size": 198,
+        "cache_count": 198,
+        "evictions": 0
+      },
+      "fielddata": {
+        "memory_size_in_bytes": 0,
+        "evictions": 0
+      },
+      "completion": {
+        "size_in_bytes": 0
+      },
+      "segments": {
+        "count": 198,
+        "memory_in_bytes": 104672116,
+        "terms_memory_in_bytes": 83902476,
+        "stored_fields_memory_in_bytes": 20710512,
+        "term_vectors_memory_in_bytes": 0,
+        "norms_memory_in_bytes": 38016,
+        "points_memory_in_bytes": 0,
+        "doc_values_memory_in_bytes": 21112,
+        "index_writer_memory_in_bytes": 0,
+        "version_map_memory_in_bytes": 0,
+        "fixed_bit_set_memory_in_bytes": 0,
+        "max_unsafe_auto_id_timestamp": 1620316779986,
+        "file_sizes": {}
+      },
+      "translog": {
+        "operations": 0,
+        "size_in_bytes": 990,
+        "uncommitted_operations": 0,
+        "uncommitted_size_in_bytes": 990,
+        "earliest_last_modified_age": 0
+      },
+      "request_cache": {
+        "memory_size_in_bytes": 0,
+        "evictions": 0,
+        "hit_count": 0,
+        "miss_count": 168
+      },
+      "recovery": {
+        "current_as_source": 0,
+        "current_as_target": 0,
+        "throttle_time_in_millis": 20039
+      }
+    }
+  }
+}
+
+设置
+{
+  "settings": {
+    "index": {
+      "refresh_interval": "30s",
+      "indexing": {
+        "slowlog": {
+          "level": "info",
+          "threshold": {
+            "index": {
+              "warn": "1s",
+              "trace": "1ms",
+              "debug": "100ms",
+              "info": "500ms"
+            }
+          },
+          "source": "false"
+        }
+      },
+      "translog": {
+        "flush_threshold_size": "512m",
+        "sync_interval": "30s",
+        "durability": "async"
+      },
+      "provided_name": "online-2021.05.05@0-000001",
+      "creation_date": "1620140609079",
+      "unassigned": {
+        "node_left": {
+          "delayed_timeout": "5m"
+        }
+      },
+      "number_of_replicas": "2",
+      "uuid": "lKHJF8FsT7iRFyBBx-Gyag",
+      "version": {
+        "created": "7060299"
+      },
+      "lifecycle": {
+        "name": "30Del",
+        "rollover_alias": "online-2021.05.05",
+        "indexing_complete": "true"
+      },
+      "codec": "best_compression",
+      "routing": {
+        "allocation": {
+          "require": {
+            "node_type": "warm"
+          },
+          "total_shards_per_node": "2"
+        }
+      },
+      "search": {
+        "slowlog": {
+          "level": "info",
+          "threshold": {
+            "fetch": {
+              "warn": "1s",
+              "trace": "1ms",
+              "debug": "500ms",
+              "info": "800ms"
+            },
+            "query": {
+              "warn": "1m",
+              "trace": "1ms",
+              "debug": "1s",
+              "info": "5s"
+            }
+          }
+        }
+      },
+      "number_of_shards": "3"
+    }
+  },
+  "defaults": {
+    "index": {
+      "flush_after_merge": "512mb",
+      "final_pipeline": "_none",
+      "max_inner_result_window": "100",
+      "max_terms_count": "65536",
+      "lifecycle": {
+        "parse_origination_date": "false",
+        "origination_date": "-1"
+      },
+      "routing_partition_size": "1",
+      "force_memory_term_dictionary": "false",
+      "max_docvalue_fields_search": "100",
+      "merge": {
+        "scheduler": {
+          "max_thread_count": "4",
+          "auto_throttle": "true",
+          "max_merge_count": "9"
+        },
+        "policy": {
+          "reclaim_deletes_weight": "2.0",
+          "floor_segment": "2mb",
+          "max_merge_at_once_explicit": "30",
+          "max_merge_at_once": "10",
+          "max_merged_segment": "5gb",
+          "expunge_deletes_allowed": "10.0",
+          "segments_per_tier": "10.0",
+          "deletes_pct_allowed": "33.0"
+        }
+      },
+      "max_refresh_listeners": "1000",
+      "max_regex_length": "1000",
+      "load_fixed_bitset_filters_eagerly": "true",
+      "number_of_routing_shards": "1",
+      "write": {
+        "wait_for_active_shards": "1"
+      },
+      "verified_before_close": "false",
+      "mapping": {
+        "coerce": "false",
+        "nested_fields": {
+          "limit": "50"
+        },
+        "depth": {
+          "limit": "20"
+        },
+        "field_name_length": {
+          "limit": "9223372036854775807"
+        },
+        "total_fields": {
+          "limit": "1000"
+        },
+        "nested_objects": {
+          "limit": "10000"
+        },
+        "ignore_malformed": "false"
+      },
+      "source_only": "false",
+      "soft_deletes": {
+        "enabled": "false",
+        "retention": {
+          "operations": "0"
+        },
+        "retention_lease": {
+          "period": "12h"
+        }
+      },
+      "max_script_fields": "32",
+      "query": {
+        "default_field": [
+          "*"
+        ],
+        "parse": {
+          "allow_unmapped_fields": "true"
+        }
+      },
+      "format": "0",
+      "frozen": "false",
+      "sort": {
+        "missing": [],
+        "mode": [],
+        "field": [],
+        "order": []
+      },
+      "priority": "1",
+      "max_rescore_window": "10000",
+      "max_adjacency_matrix_filters": "100",
+      "analyze": {
+        "max_token_count": "10000"
+      },
+      "gc_deletes": "60s",
+      "optimize_auto_generated_id": "true",
+      "max_ngram_diff": "1",
+      "translog": {
+        "generation_threshold_size": "64mb",
+        "retention": {
+          "size": "512MB",
+          "age": "12h"
+        }
+      },
+      "auto_expand_replicas": "false",
+      "mapper": {
+        "dynamic": "true"
+      },
+      "requests": {
+        "cache": {
+          "enable": "true"
+        }
+      },
+      "data_path": "",
+      "highlight": {
+        "max_analyzed_offset": "1000000"
+      },
+      "routing": {
+        "rebalance": {
+          "enable": "all"
+        },
+        "allocation": {
+          "enable": "all"
+        }
+      },
+      "search": {
+        "idle": {
+          "after": "30s"
+        },
+        "throttled": "false"
+      },
+      "fielddata": {
+        "cache": "node"
+      },
+      "default_pipeline": "_none",
+      "max_slices_per_scroll": "1024",
+      "shard": {
+        "check_on_startup": "false"
+      },
+      "xpack": {
+        "watcher": {
+          "template": {
+            "version": ""
+          }
+        },
+        "version": "",
+        "ccr": {
+          "following_index": "false"
+        }
+      },
+      "percolator": {
+        "map_unmapped_fields_as_text": "false"
+      },
+      "allocation": {
+        "max_retries": "5"
+      },
+      "indexing": {
+        "slowlog": {
+          "reformat": "true"
+        }
+      },
+      "compound_format": "0.1",
+      "blocks": {
+        "metadata": "false",
+        "read": "false",
+        "read_only_allow_delete": "false",
+        "read_only": "false",
+        "write": "false"
+      },
+      "max_result_window": "10000",
+      "store": {
+        "stats_refresh_interval": "10s",
+        "type": "",
+        "fs": {
+          "fs_lock": "native"
+        },
+        "preload": []
+      },
+      "queries": {
+        "cache": {
+          "enabled": "true"
+        }
+      },
+      "warmer": {
+        "enabled": "true"
+      },
+      "max_shingle_diff": "3",
+      "query_string": {
+        "lenient": "false"
+      }
+    }
+  }
+}
+
+映射
+{
+  "mapping": {
+    "_doc": {
+      "dynamic": "true",
+      "_meta": {},
+      "_source": {
+        "includes": [],
+        "excludes": []
+      },
+      "dynamic_date_formats": [
+        "strict_date_optional_time",
+        "yyyy/MM/dd HH:mm:ss Z||yyyy/MM/dd Z"
+      ],
+      "dynamic_templates": [
+        {
+          "strings_as_keywords": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "ignore_above": 512,
+              "type": "keyword"
+            }
+          }
+        }
+      ],
+      "date_detection": true,
+      "numeric_detection": false,
+      "properties": {
+        "@timestamp": {
+          "type": "date"
+        },
+        "appName": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "className": {
+          "type": "text",
+          "analyzer": "simple"
+        },
+        "code": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "costTime": {
+          "type": "long"
+        },
+        "errorInfo": {
+          "type": "text",
+          "analyzer": "simple"
+        },
+        "errorSource": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "group": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "ip": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "level": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "line": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "message": {
+          "type": "text"
+        },
+        "methodName": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "pid": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "threadName": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "time": {
+          "type": "keyword",
+          "ignore_above": 512
+        },
+        "timestamp": {
+          "type": "date",
+          "ignore_malformed": false
+        },
+        "traceId": {
+          "type": "keyword",
+          "ignore_above": 512
+        }
+      }
+    }
+  }
+}
