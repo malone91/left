@@ -28,6 +28,36 @@ java -jar -Xms1000m -Xmx4000m
 通过 printf  '%x/n' tid  把线程id转化为十六进制
 通过 jstack pid | grep tid -A 30 定位线程堆栈信息
 
+https://juejin.cn/post/6844904001067040781
+CPU排查三部曲
+1. top -Hp $pid 找到最耗CPU的线程.
+2. 将最耗CPU的线程ID转成16进制
+3. 打印jstack, 到jstack里面查这个线程在干嘛
+
+这个线程不是被LockSupport.park挂起了, 处于WAITING状态吗? 被挂起即代表放弃占用CPU了, 那为啥还会消耗CPU呢?
+结论：
+1. 处于waiting和blocked状态的线程都不会消耗CPU
+2. 线程频繁地挂起和唤醒需要消耗CPU, 而且代价颇大
+
+肯定消耗CPU
+ while(true){}
+CPU毫无压力
+while(true){
+LockSupport.park();
+}
+
+我们先生成数2000个线程, 利用jdk提供的LockSupport.park()不断挂起这些线程.
+再使用LockSupport.unpark(t)不断地唤醒这些线程. 唤醒之后又立马挂起. 以此达到不断切换线程的目的.
+再观察visualVm, 发现整个JVM的CPU的确开始升高了,
+但是具体到线程级别, 会发现每个线程都基本不耗CPU. 说明CPU不是这些线程本身消耗的. 而是系统在进行线程上下文切换时消耗的
+
+CPU偏高原因：
+代码中存在死循环
+JVM频繁GC
+加密和解密的逻辑
+正则表达式的处理
+频繁地线程上下文切换
+
  jstat -gcutil pid 时间间隔 查看 gc  信息  毫秒
 
  jvm old区占用过高排查思路
