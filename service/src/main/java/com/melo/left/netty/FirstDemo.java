@@ -6,6 +6,13 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+/**
+ * JDK NIO有很多bug 直接使用有很多坑
+ * netty 隔离了变化，屏蔽了细节 网络通信框架
+ * 官方的不见得是最好的
+ * Tomcat比netty早，还没有独立出来，所以Tomcat不用netty
+ * Java网络编程只推荐Netty
+ */
 public class FirstDemo {
 
     public static void main(String[] args) throws InterruptedException {
