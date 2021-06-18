@@ -12,6 +12,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
  * 官方的不见得是最好的
  * Tomcat比netty早，还没有独立出来，所以Tomcat不用netty
  * Java网络编程只推荐Netty
+ * Netty project - an event-driven asynchronous network application framework
  */
 public class FirstDemo {
 
