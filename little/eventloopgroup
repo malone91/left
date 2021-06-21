@@ -18,3 +18,7 @@ Netty 中还有一个核心概念是 EventLoopGroup，顾名思义，
 bossGroup 处理完连接请求后，会将这个连接提交给 workerGroup 来处理，
  workerGroup 里面有多个 EventLoop，那新的连接会交给哪个 EventLoop 来处理呢？
 这就需要一个负载均衡算法，Netty 中目前使用的是轮询算法
+
+单个的线程可以监听多个数据通道
+Data is always read from a channel into a buffer,
+or written from a buffer to a channel.

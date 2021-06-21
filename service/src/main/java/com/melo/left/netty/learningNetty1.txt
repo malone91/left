@@ -1,0 +1,74 @@
+08
+什么是经典的三总IO模式
+Netty对应三种IO模式的支持
+为什么Netty仅支持NIO
+为什么Netty有多种NIO实现
+NIO一定优于BIO么
+源码解读Netty怎么切换IO模式
+三种Reactor
+
+食堂排队打饭 BIO 1.4之前
+等待被叫模式 NIO
+包厢里等待直接吃 AIO jdk7 系统直接回调给我们
+
+阻塞与非阻塞：数据准备好之前要不要等待， 菜没好要不要死等
+非阻塞遇到这些情况都是直接返回
+数据没有或者缓冲区满时读写阻塞
+
+同步与异步：数据就绪后，数据操作谁来完成？  菜好了谁来端的问题
+自己去读是同步，数据就绪直接读好后再回调给程序是异步
+
+BIO同步阻塞 NIO同步非阻塞 AIO异步阻塞
+
+Netty曾经都支持过这三种模式，现在仅支持NIO
+
+为什么不建议deprecate BIO/OIO 连接数高的情况下，阻塞，耗费资源，效率低
+为什么删除AIO？ Windows实现成熟，很少用来做服务器；LinuxAIO实现不成熟，常用来做服务器
+Linux下AIO相比较NIO的性能提升不明显 效益不会太高 比较务实
+
+世界上确实是很少有完美的事情
+
+Netty的NIO有多种实现？
+common：NioServerSocketChannel NioSocketChannel NioEventLoop NioEventLoopGroup
+Linux：epoll开头
+macOS/BSD： KQueue开头
+通用的NIO实现（common）在Linux下也是使用epoll，为什么自己单独实现？
+因为实现的更好！
+1、Netty暴露了更多的可控参数，比如水平触发边缘触发
+JDK的NIO默认实现是水平触发，Netty是边缘触发（默认，效率更高）和水平触发可切换
+2、Netty实现的垃圾回收更少，性能更好
+
+Netty切换IO模式，直接改前缀
+切换的实现：反射，工厂模式，泛型 EchoServer
+NioEventLoop run方法有一个for死循环，是一个Reactor，不停循环这个事件有没有发生，然后去做相应的处理  死循环监听处理事件
+
+Netty对Reactor的支持
+设么是Reactor？ 饭店经营规模扩大，伙计，分工
+迎宾 点菜 做饭 上菜 送客
+接入连接 请求 业务处理 响应 断连
+
+一个人包揽所有，Reactor单线程 BIO thread-per-connection 阻塞
+多招几个伙计，Reactor多线程 NIO Reactor
+进一步分工，主从Reactor多线程模式
+Reactor是一种开发模式，核心流程：注册感兴趣的事件，扫描是否有感兴趣的事情发生，事件发生后做相应的处理
+client listen conn read write  SocketChannel
+server listen accept  ServerSocketChannel
+server listen read write SocketChannel
+
+服务器开发最重要的事情，接收连接
+
+1、Reactor单线程模式
+EventLoopGroup eventGroup = new NioEventLoopGroup(1);
+ServerBootstrap serverBootstrap = new ServerBootstrap();
+serverBootstrap.group(eventGroup);
+
+2、非主从Reactor多线程模式
+EventLoopGroup eventGroup = new NioEventLoopGroup();//根据CPU核数设置线程数
+ServerBootstrap serverBootstrap = new ServerBootstrap();
+serverBootstrap.group(eventGroup);
+
+3、主从Reactor多线程模式
+EventLoopGroup bossGroup = new NioEventLoopGroup();
+EventLoopGroup workerGroup = new NioEventLoopGroup();
+ServerBootstrap serverBootstrap = new ServerBootstrap();
+serverBootstrap.group(bossGroup, workerGroup);
