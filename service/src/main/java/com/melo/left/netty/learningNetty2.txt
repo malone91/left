@@ -39,5 +39,73 @@ UDP没有粘包半包 接收一个一个接收
 固定字段存储内容长度信息   固定长度浪费空间，分隔符需要扫描内容
 
 常用解决方法
-Netty对三种常用封帧方式的支持
+Netty对三种常用封帧方式的支持:封装成帧
+固定长度：FixedLengthFrameDecoder
+分隔符：DelimiterBasedFrameDecoder
+固定长度字段存内容长度信息： LengthFieldBasedFrameDecoder
+
 Netty处理粘包半包的源码
+解码核心工作流程？
+解码中两种数据积累器Cumulator的区别？
+三种解码器的常用的额外控制参数有哪些？
+
+三种解码器都继承于 ByteToMessageDecoder
+
+Netty对一些编解码的支持，常用二次编解码方式，
+
+为什么要二次编码
+把解决半包粘包问题的常用三种解码器叫一次解码器，一次解码的结果是字节数组
+需要和项目中使用的对象做转化，方便使用，这层解码器成为二次解码，相应的编码器是把Java对象转化成字节流方便存储或运输
+
+一次解码器继承 ByteToMessageDecoder 读，解码
+ io.netty.buffer.ByteBuf(原始数据流)，可能出现半包粘包问题的数据流---->io.netty.buff.ByteBuf(用户数据，还是字节数组)
+二次解码器继承 MessageToMessageDecoder<I> 读，解码
+ io.netty.buff.ByteBuf(用户数据) -----> Java Object 能很好的使用
+
+分层思想 天下大同，天下归一
+
+常用的二次编解码方式：Java序列化（很少用，占空大） Marshaling XML JSON MessageBack  Protobuf 其他
+
+Google Protobuf 可读性差，性能好 跨语言，自带编译器
+编解码选型依据：压缩后空间大小
+
+Netty序列化serialization把元信息省略了 魔数也省略了 其实还是可以work的，用反射把信息读取出来
+
+Netty是怎么支持 使用protobuf的 两对编解码 WorldClock example
+
+keepalive参数  idle监测
+为什么需要keepalive 怎么设计？以TCP层为例
+为什么需要应用层keepalive idle监测是什么
+如何在Netty中开启TCP keepalive 和idle监测
+
+keepalive：问还在不，是否继续聊
+
+需要处理keepalive的场景：对端数据异常，对端处理不过来，对端不可达
+不做keepalive的后果：连接已坏，还要浪费资源维持，下次调用直接报错
+
+uname -a
+uname -r
+cat /proc/version
+cat /proc/sys/net/ipv4/tcp_keepalive_time
+如何设计keepalive：出现概率小，没有必要频繁，判断要谨慎
+#sysctl -a | grep tcp_keepalive
+net.ipv4.tcp_keepalive_time = 7200 s
+net.ipv4.tcp_keepalive_intvl = 75 s 下一个探测宝的探测时间
+net.ipv4.tcp_keepalive_probes = 9 s
+tcp_keepalive默认关闭；打开时，TCP在连接没有数据通过的7200秒后发送keepalive信息，当探测没有确认时，按75
+秒的重试频率重发，一直发9个探测包都没有确认，就认定连接失效
+所有总耗时为 7200+75*9 = 2h 11min
+
+为什么需要应用层keepalive？ 分层 分层 分层
+协议分层，关注点不同，传输层关注通，应用层关注是否可用；电话打通不代表有人接，服务器连接在，不一定可以服务
+TCP层keepalive默认关闭，经过路由中转设备keepalive包可能被丢弃
+TCP keepalive时间长，虽然可改，但属于系统默认参数，改动影响所有应用
+
+HTTP keepalive指的是对长连接和短连接的选择
+HTTP1.1默认长连接 Connection：keep-Alive 不需要带这个header，抓包可能看不到
+Connection：close 代表短连接
+
+idle监测是什么？
+对方在一定时间内不说话，认定对方存在问题idle，于是开始发问，keepalive你还在么 或者不问直接断开连接
+idle只是负责诊断，诊断后作出不同的行为，决定idle监测的最终意义
+1、配合发送keepalive，减少keepalive的消息
