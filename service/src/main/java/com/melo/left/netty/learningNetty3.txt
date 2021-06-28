@@ -1,0 +1,42 @@
+Netty的那些锁 多线程的一些东西
+Netty大量使用了锁
+
+同步问题的核心三要素
+ 原子性 可见性 有序性
+
+锁的分类：
+    对竞争的态度：乐观锁(并发包的原子类)与悲观锁(synchronized)
+    等待锁的人是否公平：公平锁 非公平锁 重入锁（true即公平）
+    是否可以共享：共享锁与独享锁 ReadWriteLock 读锁为共享锁，写锁为独享锁
+
+Netty玩转锁的五个关键点，可借鉴的地方
+    1在意锁的对象和范围-->减少锁粒度
+    2注意锁的对象本身大小-->减少空间占用
+    3注意锁的速度-->提高速度
+    4不同场景选择不同的并发类-->因需而变
+    5衡量好锁的价值-->能不用则不用
+
+1初始化channel bootstrap.ServerBootStrap.init
+Synchronized method -->Synchronized block
+设置option和attribute，没有加到方法上，而是代码段上
+针对不同的属性，分别设锁，锁定不同的范围，减小了锁的范围，没有线程安全的问题不用加
+但是现在代码重构了，重点是锁的范围要小
+
+2统计待发送的字节数io.netty.channel.ChannelOutboundBuffer#totalPendingSize
+private volatile long totalPendingSize;
+AtomicLong --> volatile long + AtomicLongFieldUpdater
+达到同样的目标，好处是什么？
+AtomicLong vs long
+前者是一个对象，对象头保存hashcode lock，32位占8字节，64位占16字节
+在64位系统下，volatile long = 8byte
+AtomicLong = 8byte（volatile long） + 16byte对象头 + 8byte引用 = 32byte 可能有指针压缩，但不较真这个
+节约24byte字节
+Atomic objects > volatile primary type + static atomic*fieldUpdater 有效减少锁占用的空间
+1、volatile解决了可见性
+2、static 如果不是static，不能减少空间的大小 ？以后解释
+
+3非常注意锁的速度
+记录内存分配字节数等功能用到的LongCounter
+io.netty.util.internal.PlatformDependent#newLongCounter() 判断jdk版本
+高并发时，AtomicLong -> LongAdder JDK8
+及时衡量使用JDK最新的功能

@@ -89,7 +89,7 @@ cat /proc/version
 cat /proc/sys/net/ipv4/tcp_keepalive_time
 如何设计keepalive：出现概率小，没有必要频繁，判断要谨慎
 #sysctl -a | grep tcp_keepalive
-net.ipv4.tcp_keepalive_time = 7200 s
+net.ipv4.tcp_keepalive_time = 7200 s 距离上次传送数据多少时间未收到新报文判断为开始检测
 net.ipv4.tcp_keepalive_intvl = 75 s 下一个探测宝的探测时间
 net.ipv4.tcp_keepalive_probes = 9 s
 tcp_keepalive默认关闭；打开时，TCP在连接没有数据通过的7200秒后发送keepalive信息，当探测没有确认时，按75
@@ -109,3 +109,32 @@ idle监测是什么？
 对方在一定时间内不说话，认定对方存在问题idle，于是开始发问，keepalive你还在么 或者不问直接断开连接
 idle只是负责诊断，诊断后作出不同的行为，决定idle监测的最终意义
 1、配合发送keepalive，减少keepalive的消息
+ keepalive设计演进：
+ V1定时keepalive消息--->V2空闲监测+判定为Idle时才发keepalive
+2、直接关闭连接
+快速释放损坏的恶意的很久不用的连接，让系统时刻保持最好的状态
+简单粗暴，客户端可能需要重连
+
+实际使用：按需keepalive，保证不会空闲，如果空闲关闭连接
+
+Netty源码层面支持tcp_keepalive_time 和idle监测的介绍：
+server端开启TCP keepalive
+boostrap.childOption(ChannelOption.SO_KEEPALIVE, true)
+boostrap.childOption(NioChannelOption.of(StandardSocketOption.SO_KEEPALIVE), true)
+.option(ChannelOption.SO_KEEPALIVE, true)存在但是无效
+
+开启idle check
+ch.pipeline().addLast("idleCheckHandler", new IdleStateHandler(0, 20, 0, TimeUnit.SECONDS));
+                              int readerIdleTimeSeconds, int writerIdleTimeSeconds, int allIdleTimeSeconds
+0表示关闭
+
+回到echoserver例子
+看bootstrap.childOption方法 child是跟客户端连接的SocketChannel 底层调用jdk，规避jdk bug
+
+IdleStateHandler.hasOutputChange 看是否有写的意图，而不是写成功
+
+
+ReadTimeOutHandler
+WriteTimeOutHandler
+
+fireExceptionCaught

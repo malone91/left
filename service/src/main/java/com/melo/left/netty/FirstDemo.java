@@ -24,6 +24,7 @@ public class FirstDemo {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
+                    .childOption(ChannelOption.SO_KEEPALIVE, Boolean.TRUE)
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
