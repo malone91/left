@@ -1,0 +1,56 @@
+Netty如何玩转内存使用
+内存管理的原理玩不了，就学习使用的技巧
+
+内存使用技巧的目标：内存占用小，应用速度快，对Java而言减少Full GC STW的时间
+多快好省
+
+减小对象本身大小
+能用基本类型就不要用包装类型，占用空间大
+应该定义成类变量的不要定义为实例变量
+一个类 -> 一个类变量
+一个实例 -> 一个实例变量
+一个类 -> 多个实例
+实例越多，浪费越多
+
+统计待写的请求的字节数
+io.netty.channel.ChannelOutBoundBuffer#incrementPendingOutBoundBytes(long, boolean)
+AtomicLong -> volatile long + static AtomicLongFieldUpdater
+减小ChannelOutBoundBuffer的占用
+
+对分配内存进行预估
+对于已经预知固定size的HashMap避免扩容，提前计算好初始size或者直接使用
+com.google.common.collect.Maps#newHashMapWithExpectedSize 相当于除以0.75
+
+Netty会根据收到的数据 动态调整guess下个要分配的Buffer大小
+io.netty.channel.AdaptiveRecvByteBufAllocator#guess record
+这个类的核心思想是 会将接收数据buffer的容量尽可能的足够大以接收数据，也尽可能的小以避免浪费
+
+0复制 最底层的就是0复制
+1使用了逻辑组合代替了实际复制
+CompositeByteBuf io.netty.handler.codec.ByteToMessageDecoder#COMPOSITE_CUMULATOR
+将数据组合到一起
+2使用包装代替了实际的复制
+byte[] bytes = data.getBytes();
+ByteBuf buf = Unpooled.wrappedBuffer(bytes);
+3调用jdk的0复制接口
+io.netty.channel.DefaultFileRegion#transferTo
+4堆外内存
+什么是堆外off-heap 什么是非堆non-heap,属于jvm管理
+堆外内存：
+    更大的空间，减轻GC压力，破除堆空间限制 堆内越大，full gc压力越大
+    避免复制，用户空间复制到jvm
+    创建速度慢，开销大
+    管控风险大，受os管理
+
+内存池技巧 循环使用的目标
+为什么引入对象池
+创建对象开销比较大比如数据库连接池 堆外内存
+对象创建频率高 比如buffer
+支持并发又能保护系统
+维护共享有限的资源
+如何实现对象池？
+Apache Common Pool 问题：全局共享，资源争用厉害
+Netty轻量级对象池实现 io.netty.util.Recycler 基于它的场景建立的
+场景 场景 场景
+
+如何使用这些内存技巧呢？

@@ -39,4 +39,36 @@ Atomic objects > volatile primary type + static atomic*fieldUpdater 有效减少
 记录内存分配字节数等功能用到的LongCounter
 io.netty.util.internal.PlatformDependent#newLongCounter() 判断jdk版本
 高并发时，AtomicLong -> LongAdder JDK8
-及时衡量使用JDK最新的功能
+及时衡量使用JDK最新的功能 提高了并发性
+
+ 曾经根据不同情况，选择不同的并发包实现，jdk版本小，复制8的实现-->非常注重并发性
+ ConstantPool
+  private final ConcurrentMap<String, T> constants = PlatformDependent.newConcurrentHashMap();
+ ConcurrentMap
+
+关闭和等待关闭事件执行器 Event Executor
+object.wait/notify --> CountDownLatch
+io.netty.util.concurrent.SingleThreadEventExecutor#threadLock变量实现为CDL
+原生使用太复杂，放到监视器里
+
+NioEventLoop负责存储task的Queue
+jdk's LinkedBlockingQueue(MPMC模式) -> jctools's MPSC
+io.netty.util.internal.PlatformDependent.Mpsc#newMpscQueue(int)
+reactor开发模式，循环处理注册的事件
+MPMC模式 多生产者多消费者 所有的模式都要支持，场景最广阔
+Netty使用多生产者单消费者模型
+NioEventLoop 是MPSC模型，生产者多个，消费者一个，
+NioEventLoop只绑定了一个线程（一个服务员），服务于多个channel（包厢）
+一个服务员服务于多个包厢，多个服务于服务更多的包厢
+所以对于它来说，它的消费者其实只有一个，非常经典的MPSC模型
+jctool提供了非阻塞并发数据结构
+
+4锁能不用就不用
+
+Netty应用场景下；局部串行，整体并行 优于 一个队列+多个线程模式
+降低开发难度，逻辑简单，提升处理性能，避免锁带来的上下文切换和并发保护等额外开销
+
+避免锁的例子：ThreadLocal
+用它来避免资源争用，Netty轻量级的线程池实现
+io.netty.util.Recycle#threadLocal
+ThreadLocal是将资源绑定到线程上，消除了资源的争用问题
