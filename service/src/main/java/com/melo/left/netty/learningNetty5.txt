@@ -1,0 +1,34 @@
+读代码
+主线角度：请求处理，更容易理解Netty的本质以及核心业务逻辑是什么
+编译源码常见的问题
+1、找不到jar包netty.tcnative 32位系统出现这个错误 不支持
+os jdk idea都要64位
+2、netty.util.collection不存在
+是因为一个模板，生产Java文件
+common.util.collection script groovy脚本
+pom驱动groovy执行 执行阶段看phase generate source编译时候执行
+executions-execution-phase
+解决办法：右键common module，maven执行-DskipTest compile就会生成到target里classes
+
+源码包括3个部分
+1、io.netty.buffer/common/resolver/resolver.dns等工具类，支持实现核心逻辑，实现transport
+有TCP UPD 其他协议：sctp rxtx udt
+io.netty.transport.epoll/kqeue/unix.common/sctp
+3、编解码 Handler
+io.netty.codec.dns/haproxy/http/http2/memcache/redis/mqtt/smtp/socks/stomp/xml
+io.netty.handler.proxy
+codes分为两类，帮我们处理半包粘包问题编解码和对于不同协议支持-Redis等
+
+buffer比jdk的ByteBuffer功能要强大
+codec
+
+mqtt：物联网中比较流行的轻量级的消息队列协议
+
+netty-example 抄代码从这里搞
+traffic流量控制 不是核心功能，但是我们爱上它的理由
+transport TCP UDP
+
+netty启动最核心的是做好接收连接的准备
+1主线 初步了解
+2源码跟踪
+3总结知识点

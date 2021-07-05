@@ -54,3 +54,23 @@ Netty轻量级对象池实现 io.netty.util.Recycler 基于它的场景建立的
 场景 场景 场景
 
 如何使用这些内存技巧呢？
+
+内存池 非内存池的默认选择和切换方式
+EchoServer 69L Allocator .childOption（channelOption.ALLOCATOR, ...）
+io.netty.channel.DefaultConfig#allocator
+ByteBufUtil static block
+默认使用了池化的实现
+
+内存池实现 PooledDirectedByteBuf 36L
+newInstance Recycler.get 借
+deallocate Recycler.recycle 还
+实现内存池的根本的方法 stack
+
+
+堆外内存和堆内内存的默认选择和切换方式 代码和配置
+释放堆外内存 && io.netty.noPreferDirect false
+preferDirect 这个命名可以借鉴
+默认不使用堆内内存的
+
+堆外内存的分配本质
+底层调用ByteBuffer.allocateDirect方法
