@@ -30,5 +30,17 @@ transport TCP UDP
 
 netty启动最核心的是做好接收连接的准备
 1主线 初步了解
+两个线程完成了这样的事情：
+A our thread
+    创建selector
+    创建server socket channel
+    初始化 server socket channel
+    给server socket channel 从boss group中选择一个NioEventLoop
+B boss thread
+    将 server socket channel注册到选择的NioEventLoop的selector
+    绑定地址启动
+    注册接收连接事件OP_ACCEPT到selector上
+做了一个线程的切换，将注册作为一个task来的
+
 2源码跟踪
 3总结知识点
