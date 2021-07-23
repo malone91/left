@@ -43,4 +43,5 @@ B boss thread
 做了一个线程的切换，将注册作为一个task来的
 
 2源码跟踪
+selector是在new一个NioEventLoop的时候创建的
 3总结知识点
