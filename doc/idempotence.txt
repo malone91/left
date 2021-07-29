@@ -1,0 +1,25 @@
+// 在AOP切面中处理幂等
+@Aspect
+public class IdempotenceSupportAdvice {
+	@Autowired
+	private Idempotence idempotence;
+
+	@Pointcut("@annotation(com.xzg.cd.idempotence.annotation.IdempotenceRequired)")
+	public void controllerPointcut() {
+
+	}
+	@Around(value = "controllerPointcut()")
+	public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
+		// 从HTTP header中获取幂等号idempotenceId
+		// 前置操作
+		boolean existed = idempotence.check(idempotenceId);
+		if (existed) {
+			// 两种处理方式
+			// 1. 查询order，并且返回
+			// 2. 返回duplication operation Exception
+		}
+		idempotence.record(idempotenceId)
+		Object result = joinPoint.proceed();
+		return result;
+	}
+}
