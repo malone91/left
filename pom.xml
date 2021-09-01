@@ -148,13 +148,19 @@
             <artifactId>sentinel-core</artifactId>
             <version>1.8.2</version>
         </dependency>
-        <!-- sentinel starter -->
+        <!-- sentinel starter 链接dashboard -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
             <version>2.2.0.RELEASE</version>
         </dependency>
-        <!-- guaua -->
+        <!-- sentinel dashboard -->
+        <dependency>
+            <groupId>com.alibaba.csp</groupId>
+            <artifactId>sentinel-transport-simple-http</artifactId>
+            <version>1.8.2</version>
+        </dependency>
+        <!-- guava -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
