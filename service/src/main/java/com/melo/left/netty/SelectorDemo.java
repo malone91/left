@@ -21,7 +21,27 @@ package com.melo.left.netty;
  * 抽象类，.open获取实例对象
  * select方法：监控所有注册的通道，当其中有IO操作可以进行时，将对应的
  * SelectKey加入到内部集合中并返回，参数来设置超时时间
- * selectKeys：从内部集合中获取
+ * selectKeys：从内部集合中获取，是SelectorImpl实现类中的成员变量
+ * 一旦监听到哪个channel有事件发生了，就会把这个SelectorKey拿到，就可以通过selectorKey
+ * 反向得到这个channel  SelectorKey是跟channel关联的，有个方法叫channel
+ *
+ * 总体来说就是，Selector是跟Thread绑定的，调用select方法，返回一个selectKey集合,
+ * 反向获取channel信息
+ *
+ * select方法是阻塞的，直到注册的channel通道有至少一个事件发生，才会返回
+ * 非阻塞的就是select(long )带参数的
+ * selectNow 非阻塞的select 如果现在没有得到，立即返回
+ * selectKeys方法：从内部集合中获取所有的SelectKey无论是否有事件发生
+ *
+ *
+ * Selector SelectionKey ServerSocketChannel SocketChannel四者关系
+ * ：当客户端连接时，会通过ServerSocketChannel得到SocketChannel
+ * 将得到的SocketChannel注册到selector上 SocketChannel#register(selector sel, int ops)方法，可以注册多个SocketChannel
+ * 注册后返回一个SelectionKey，会和Selector关联
+ * Selector会通过select方法进行监听，返回有事件发生的通道的个数
+ * 进而进一步得到各个 SelectorKey（有事件发生的）
+ * 通过SelectorKey 的channel 获取SocketChannel 进行业务操作
+ *
  */
 public class SelectorDemo {
 }
