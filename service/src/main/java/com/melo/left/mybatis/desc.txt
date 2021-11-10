@@ -16,4 +16,4 @@ curl -X POST --header 'Content-Type: application/json' --header 'Accept: applica
    "pageSize": 0, \
    "start": 0, \
    "startTime": "string" \
- }' 'http://10.115.105.19:9100/fetch/contract/num'
+ }' 'http://ip:9100/fetch/contract/num'
