@@ -13,12 +13,12 @@ public class SpiDemo {
 
     public static void main(String[] args) {
         Iterator<SpiService> providers = Service.providers(SpiService.class);
-        ServiceLoader<SpiService> load = ServiceLoader.load(SpiService.class);
         while (providers.hasNext()) {
             SpiService spiService = providers.next();
             spiService.execute();
         }
 
+        ServiceLoader<SpiService> load = ServiceLoader.load(SpiService.class);
         Iterator<SpiService> iterator = load.iterator();
         while (iterator.hasNext()) {
             SpiService next = iterator.next();
