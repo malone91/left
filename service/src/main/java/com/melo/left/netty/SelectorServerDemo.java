@@ -1,5 +1,15 @@
 package com.melo.left.netty;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+import java.util.Set;
+
 /**
  * 一个线程处理多个的客户端连接，就会用到Selector选择器
  * 它能够检测多个注册的通道上是否有事件发生，
@@ -43,5 +53,45 @@ package com.melo.left.netty;
  * 通过SelectorKey 的channel 获取SocketChannel 进行业务操作
  *
  */
-public class SelectorDemo {
+public class SelectorServerDemo {
+
+    public static void main(String[] args) throws IOException {
+        ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
+        Selector selector = Selector.open();
+        //绑定端口到服务端监听
+        serverSocketChannel.socket().bind(new InetSocketAddress(6666));
+        serverSocketChannel.configureBlocking(false);
+        //客户端发请求通过通道，然后创建一个跟自己关联的通道 连接事件
+        serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+        while (true) {
+            if (selector.select(1000) == 0) {
+                System.out.println("服务器等待了1s，无连接");
+                continue;
+            }
+            //有事件发生的key
+            Set<SelectionKey> selectionKeys = selector.selectedKeys();
+            Iterator<SelectionKey> iterator = selectionKeys.iterator();
+            while (iterator.hasNext()) {
+                SelectionKey selectionKey = iterator.next();
+                if (selectionKey.isAcceptable()) {
+                    //有连接来了，给客户端分配一个新的SocketChannel accept虽为阻塞，但现在已经知道有该事件发生了，所以会马上执行
+                    //方法本身是阻塞的，但事件驱动会马上执行
+                    SocketChannel socketChannel = serverSocketChannel.accept();
+                    System.out.println("客户端连接成功" + socketChannel.hashCode());
+                    //IllegalBlockingModeException防止该异常
+                    socketChannel.configureBlocking(false);
+                    //关联一个buffer
+                    socketChannel.register(selector, SelectionKey.OP_READ, ByteBuffer.allocate(1024));
+                } else if (selectionKey.isReadable()) {
+                    SocketChannel socketChannel = (SocketChannel) selectionKey.channel();
+                    //获取channel关联的buffer
+                    ByteBuffer attachment = (ByteBuffer) selectionKey.attachment();
+                    socketChannel.read(attachment);
+                    System.out.println("from 客户端" + new String(attachment.array()));
+                }
+                //手动从集合中移除当前的selectKey，防止重复操作
+                iterator.remove();
+            }
+        }
+    }
 }
