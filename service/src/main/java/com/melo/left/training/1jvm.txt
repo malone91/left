@@ -92,7 +92,7 @@ Constant pool: //常量池 引用到所有的变量 在操作栈上都是一个�
     descriptor: ([Ljava/lang/String;)V
     flags: ACC_PUBLIC, ACC_STATIC
     Code:
-      stack=2, locals=2, args_size=1
+      stack=2, locals=2, args_size=1          //创建深度为几栈深度 本地变量表长度多少，几个槽位 一切都可控
          0: new           #2                  // class com/melo/left/training/ja                                                                                  va/HelloByteCode
          3: dup
          4: invokespecial #3                  // Method "<init>":()V
@@ -116,6 +116,12 @@ a+b 两种不同类型 在编译时字节码已经做好了相关的转换指令
 方法调用的指令
 invokestatic 调用某类的静态方法，最快的调用指令
 invokespecial 调用构造函数，也可同一个类的private方法，可见的超类方法
-invokevirtual 具体类型目标对象，调用公共、受保护和package级的私有方法
+invokevirtual 具体类型目标对象，调用公共、受保护和package级的私有方法 ，被子类覆盖的父类方法，实际调用的是子类的方法这就是虚方法 只要有子类覆盖
 invokeinterface 接口引用调用方法时
 invokedynamic JDK新加，实现动态类型语言支持，JDK8以后支持lambda实现基础
+
+不同的classloader可以做版本化，模块化。两个兄弟没有任何的双亲关系，基于这个可以把不同的jar包隔离掉
+同样的代码用两个classloader加载，代码加接口升级了，用B loader加载，代码有了两个不同版本的类，这是
+JDK9之前会出现的自定义类加载器
+
+扩展类和应用类可见,启动类是c++实现的看不到
