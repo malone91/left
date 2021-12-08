@@ -145,3 +145,56 @@ JVM进程下包含 栈 堆 非堆 JVM自身，  堆最大-Xmx1G，一般为物�
 调用JNI方法时会产生方法栈，内存不在JVM的管理方位之内，也是在堆外内存
 
 栈帧是一个逻辑上的概念，具体的大小在一个方法编写完成后基本就能确定。
+
+jps -lmv
+               1s打一次  执行1000次
+jstat -gc pid 1000 1000
+jstat -gcutil pid 1000 1000 更简洁，每秒显示各个区大小，回收时间
+
+ps -ef | grep java
+
+jmap -heap pid  简单的堆配置
+
+jmap -histo pid 占用排名
+instances 实例 占用字节 className   [B [I [L类
+[C is a char[]  和字符串相关
+[S is a short[]
+[I is a int[]
+[B is a byte[]
+[[I is a int[][]
+
+jmap -histo pid > a.txt
+vim a.txt
+
+输入 gg 命令，光标会移动到文档开头 ；
+输入 G 命令，光标会移动到文档末尾；
+
+jstack -l pid
+将线程相关的locks信息一起输出，比如持有的锁，等待 的锁
+parking to wait for <>
+kill -3 pid
+
+kill -3 PID命令只能打印那一瞬间java进程的堆栈信息，适合在服务器响应慢，cpu、内存快速飙升等异常情况下使用，
+可以方便地定位到导致异常发生的java类，解决如死锁、连接超时等原因导致的系统异常问题。该命令不会杀死进程。
+
+jcmd pid help
+jcmd pid VM.version
+jcmd pid VM.flags
+jcmd pid VM.info  记录了最近发生的GC的情况 GC Heap History (20 Events)
+jcmd pid GC.heap_info
+
+jrunscript -e "cat("http://www.baidu.com")"
+
+堆 默认的配置是什么
+
+jconsole
+堆内存一直上升不下降，有问题
+
+jvisualvm
+Visual GC
+jmc
+
+引用计数 循环依赖的对象，永远不会为0，最终导致内存溢出
+一旦为0，就不会变为1了
+所以引出了 引用跟踪， 不去标记所有的对象了，对象生存时间短，从根对象出发遍历标记，没有标记的就是死对象
+循环的问题也解决了
