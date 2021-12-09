@@ -1,10 +1,8 @@
 package com.melo.left.test.controller;
 
-import com.gome.scot.dcs.api.bangke.model.HandleBangkeProjectVO;
 import com.melo.left.test.service.TestService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,9 +14,5 @@ public class DubboTestController {
     @Autowired
     private TestService testService;
 
-    @PostMapping("test")
-    public HandleBangkeProjectVO test() {
-        return testService.test();
-    }
 
 }
