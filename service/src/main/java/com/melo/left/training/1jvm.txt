@@ -241,3 +241,18 @@ java -jar -XX:+UseParallelGC -XX:+UseParallelOldGC  .\service-1.0-SNAPSHOT.jar
 -XX:+UseParallelGC
 -XX:+UseParallelOldGC
 jmap -heap pid
+jps -l
+jps
+新生代并行
+并发
+
+并行GC Parallel GC最常用的调整是并行的GC的线程数 ParallelGCThreads，默认为CPU核数
+效率比较高，整体处理GC的时间总的比较少 保障CPU资源，系统吞吐量比较高
+新生代并行STW方式的标记-复制法，老年代使用标记-清除-整理法
+
+CMS 老年代使用并发标记-清除算法，新生代并行STW方式的标记-复制法
+对老年代的处理比较简单，不对老年代进行整理，使用空闲列表管理内存空间的回收，避免了长时间的卡顿，
+标记-清除阶段的大部分工作和应用线程一起并发执行，这些阶段并没有明显的应用线程暂停，和应用线程争抢CPU时间
+CMS并发线程数=CPU核心数的1/4
+如果是多和CPU，主要调优目标是降低GC停顿导致的系统延迟，使用CMS是个很明智的选择
+特点是每次暂停时间短
