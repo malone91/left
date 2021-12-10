@@ -235,3 +235,9 @@ G1到了45%开始做GC
 S1 S0的数据不会放到Eden
 
 敲黑板，各种GC
+
+演示
+java -jar -XX:+UseParallelGC -XX:+UseParallelOldGC  .\service-1.0-SNAPSHOT.jar
+-XX:+UseParallelGC
+-XX:+UseParallelOldGC
+jmap -heap pid
