@@ -5,7 +5,7 @@ java  GCLogAnalysis
 正在执行...
 执行结束!共生成对象次数:7073
 
-D:\jk\java进阶训练营\第02周：JVM进阶 NIO技术>java -XX:+PrintGCDetails GCLogAnalysis
+>java -XX:+PrintGCDetails GCLogAnalysis
 正在执行...
 [GC (Allocation Failure) [PSYoungGen: 33077K->5110K(38400K)] 33077K->12405K(125952K), 0.0308033 secs] [Times: user=0.00 sys=0.00, real=0.03 secs]
 [GC (Allocation Failure) [PSYoungGen: 38390K->5110K(71680K)] 45685K->25151K(159232K), 0.0125724 secs] [Times: user=0.00 sys=0.05, real=0.01 secs]
