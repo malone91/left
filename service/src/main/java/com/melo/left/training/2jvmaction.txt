@@ -1,0 +1,2 @@
+javac -encoding UTF-8 GCLogAnalysis.java
+java -XX:+PrintGCDetails GCLogAnalysis
