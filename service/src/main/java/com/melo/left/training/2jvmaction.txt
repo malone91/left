@@ -1,2 +1,30 @@
 javac -encoding UTF-8 GCLogAnalysis.java
 java -XX:+PrintGCDetails GCLogAnalysis
+
+java  GCLogAnalysis
+正在执行...
+执行结束!共生成对象次数:7073
+
+D:\jk\java进阶训练营\第02周：JVM进阶 NIO技术>java -XX:+PrintGCDetails GCLogAnalysis
+正在执行...
+[GC (Allocation Failure) [PSYoungGen: 33077K->5110K(38400K)] 33077K->12405K(125952K), 0.0308033 secs] [Times: user=0.00 sys=0.00, real=0.03 secs]
+[GC (Allocation Failure) [PSYoungGen: 38390K->5110K(71680K)] 45685K->25151K(159232K), 0.0125724 secs] [Times: user=0.00 sys=0.05, real=0.01 secs]
+[GC (Allocation Failure) [PSYoungGen: 71670K->5098K(71680K)] 91711K->46761K(159232K), 0.0264458 secs] [Times: user=0.00 sys=0.02, real=0.03 secs]
+[GC (Allocation Failure) [PSYoungGen: 71658K->5118K(138240K)] 113321K->69852K(225792K), 0.0284353 secs] [Times: user=0.03 sys=0.01, real=0.03 secs]
+[Full GC (Ergonomics) [PSYoungGen: 5118K->0K(138240K)] [ParOldGen: 64733K->68485K(139264K)] 69852K->68485K(277504K), [Metaspace: 2618K->2618K(1056768K)], 0.0544842 secs] [Times: user=0.08 sys=0.00, real=0.06 secs]
+[GC (Allocation Failure) [PSYoungGen: 133120K->5112K(138240K)] 201605K->112621K(277504K), 0.0234047 secs] [Times: user=0.00 sys=0.03, real=0.02 secs]
+[Full GC (Ergonomics) [PSYoungGen: 5112K->0K(138240K)] [ParOldGen: 107509K->104481K(205824K)] 112621K->104481K(344064K), [Metaspace: 2618K->2618K(1056768K)], 0.0544583 secs] [Times: user=0.08 sys=0.00, real=0.06 secs]
+[GC (Allocation Failure) [PSYoungGen: 133120K->44395K(258048K)] 237601K->148876K(463872K), 0.0519741 secs] [Times: user=0.00 sys=0.03, real=0.05 secs]
+[GC (Allocation Failure) [PSYoungGen: 257899K->54270K(269312K)] 362380K->207905K(475136K), 0.0478011 secs] [Times: user=0.08 sys=0.05, real=0.05 secs]
+[GC (Allocation Failure) [PSYoungGen: 269310K->88561K(401408K)] 422945K->268708K(607232K), 0.0472845 secs] [Times: user=0.05 sys=0.03, real=0.05 secs]
+[Full GC (Ergonomics) [PSYoungGen: 88561K->9704K(401408K)] [ParOldGen: 180146K->205551K(328704K)] 268708K->215255K(730112K), [Metaspace: 2618K->2618K(1056768K)], 0.0885924 secs] [Times: user=0.11 sys=0.03, real=0.09 secs]
+执行结束!共生成对象次数:3481
+Heap
+ PSYoungGen      total 401408K, used 22444K [0x00000000d5f00000, 0x00000000f9400000, 0x0000000100000000)
+  eden space 312832K, 4% used [0x00000000d5f00000,0x00000000d6b710e8,0x00000000e9080000)
+  from space 88576K, 10% used [0x00000000f0180000,0x00000000f0afa090,0x00000000f5800000)
+  to   space 115712K, 0% used [0x00000000e9080000,0x00000000e9080000,0x00000000f0180000)
+ ParOldGen       total 328704K, used 205551K [0x0000000081c00000, 0x0000000095d00000, 0x00000000d5f00000)
+  object space 328704K, 62% used [0x0000000081c00000,0x000000008e4bbd18,0x0000000095d00000)
+ Metaspace       used 2624K, capacity 4486K, committed 4864K, reserved 1056768K
+  class space    used 290K, capacity 386K, committed 512K, reserved 1048576K
