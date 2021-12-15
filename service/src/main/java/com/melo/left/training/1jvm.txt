@@ -462,3 +462,27 @@ MaxNewSIze变小了，332.75M
 64*4*13/10 332.8
 为什么会有这个差别呢？
 CMS里最大的Young区GC使用的内存是64位机器上是 64M乘以并行GC的线程数再乘以一个系数13/10
+
+JVM管理两种内存，一个是堆，一个是非堆
+堆就是Java代码可及的内存，是留给开发人员使用的；
+非堆就是JVM留给 自己用的，所有方法区、JVM内部处理或优化所需的内存(如JIT编译后的代码缓存)、
+每个类结构(如运行时常数池、字段和方法数据)以及方法和构造方法 的代码都在非堆内存中。
+1、堆内存分配：
+-Xms 256m
+-Xmx 256m
+JVM初始分配的内存由-Xms指定，默认是物理内存的1/64；
+JVM最大分配的内存由-Xmx指 定，默认是物理内存的1/4。
+默认空余堆内存小于40%时，JVM就会增大堆直到-Xmx的最大限制；
+空余堆内存大于70%时，JVM会减少堆直到 -Xms的最小限制。因此服务器一般设置-Xms、-Xmx相等以避免在每次GC 后调整堆的大小。
+2、非堆内存分配：
+-XX:PermSize 256m
+-XX:MaxPermSize 256m
+JVM使用-XX:PermSize设置非堆内存初始值，默认是物理内存的1/64；
+由-XX:MaxPermSize设置最大非堆内存的大小，默认是物理内存的1/4。
+
+堆溢出：
+java.lang.OutOfMemoryError:Java heap spcace
+栈溢出：
+java.lang.StackOverflowError
+方法区溢出：
+java.lang.OutOfMemoryError:PermGen space

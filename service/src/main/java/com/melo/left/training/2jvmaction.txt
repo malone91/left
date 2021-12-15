@@ -85,3 +85,135 @@ Heap
 Full GC Young和Old区都发生了变化，Meta区没有变化
 Minor GC 指Young区，Major指Old区GC
 以上两组不会区分的特别清晰，可能是一样的， Old区时间长的原因吧
+
+接下来具体看不同的GC下的表现
+1、串行化GC
+java -XX:+UseSerialGC -Xms512m -Xmx512m -Xloggc:gc.serial.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+执行结束!共生成对象次数:7843
+gc.serial.log
+
+改为2G
+java -XX:+UseSerialGC -Xms2g -Xmx2g -Xloggc:gc.serial.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+执行结束!共生成对象次数:8116
+
+Minor GC 把Eden区和存活区S0的对象复制到S1，有部分对象晋升到老年代
+Full GC 把老年代回收掉
+
+模拟Full GC
+java -XX:+UseSerialGC -Xms128m -Xmx128m -Xloggc:gc.serial.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+Full GC只有老年代在处理，而且有些Full GC老年代没有变，什么活都没有干成 还是那个内存 GC无效
+JVM进程干掉了，一直在Full GC，跟崩了没区别
+串行化GC能不用就不用
+
+2、并行GC
+java -XX:+UseParallelGC -Xms512m -Xmx512m -Xloggc:gc.parallel.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+执行结束!共生成对象次数:5619
+
+暂停的时间变短了，Young区
+最后一次YoungGC 88%--->18%
+最后一次FullGC Young变为0，Old区 91%--->66% 减少了25的数据
+这些情况基本符合分代假设，Young区在一次GC大部分可以干掉。FullGC一般情况下存放的正在使用、已使用还要用的
+例子跟业务系统有区别，在创建时就没有了 业务系统干掉的Full GC并不多
+
+java -XX:+UseParallelGC -Xms2g -Xmx2g -Xloggc:gc.parallel.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+没有Full GC了
+
+变为128M时也是一直Full GC
+
+年轻代GC的时候，只清理Young区，Old区不清理，存活对象到S1区，Eden和S0全部清空；老年代增加
+Full GC 清除Young干到0，并清理Old区
+
+引用跟踪，没有人记住他，就会被回收
+
+如果不配置Xms会怎么样？
+java -XX:+UseParallelGC -Xmx512m -Xloggc:gc.parallel.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+第一次GC发生的内存比较小，所以第一次发生的时间会提前
+
+3、CMS
+java -XX:+UseConcMarkSweepGC -Xms512m -Xmx512m -Xloggc:gc.cms.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+执行结束!共生成对象次数:8480
+GC情况变复杂了
+发生了多次Young GC 有多个步骤
+初始标记 STW阶段，时间很短，1毫秒，因为只标记了根对象的第一个对象，即每个队的排头
+并发标记
+并发预清理
+最终标记
+并发清除
+并发重置
+默认情况下，在做并发GC处理的时候，GC线程数占CPU核心数的四分之一
+默认CMS GC后不进行内存整理清理，但有参数可以调，FullGC后做一次清理，减少内存碎片
+
+xms xmx都配置为4g
+java -XX:+UseConcMarkSweepGC -Xms4g -Xmx4g -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+2021-12-15T13:05:14.371+0800: [GC (Allocation Failure) 2021-12-15T13:05:14.371+0800: [ParNew: 272640K->34048K(306688K), 0.0316200 secs] 272640K->84680K(4160256K), 0.0327151 secs] [Times: user=0.08 sys=0.05, real=0.03 secs]
+2021-12-15T13:05:14.459+0800: [GC (Allocation Failure) 2021-12-15T13:05:14.459+0800: [ParNew: 306688K->34048K(306688K), 0.0408347 secs] 357320K->162308K(4160256K), 0.0412289 secs] [Times: user=0.13 sys=0.03, real=0.04 secs]
+2021-12-15T13:05:14.563+0800: [GC (Allocation Failure) 2021-12-15T13:05:14.563+0800: [ParNew: 306592K->34048K(306688K), 0.0598961 secs] 434853K->241879K(4160256K), 0.0604376 secs] [Times: user=0.22 sys=0.02, real=0.06 secs]
+2021-12-15T13:05:14.690+0800: [GC (Allocation Failure) 2021-12-15T13:05:14.690+0800: [ParNew: 306688K->34048K(306688K), 0.0634232 secs] 514519K->320621K(4160256K), 0.0640135 secs] [Times: user=0.16 sys=0.03, real=0.06 secs]
+2021-12-15T13:05:14.826+0800: [GC (Allocation Failure) 2021-12-15T13:05:14.827+0800: [ParNew: 306541K->34048K(306688K), 0.0639988 secs] 593115K->402088K(4160256K), 0.0646384 secs] [Times: user=0.17 sys=0.03, real=0.07 secs]
+2021-12-15T13:05:14.955+0800: [GC (Allocation Failure) 2021-12-15T13:05:14.956+0800: [ParNew: 306688K->34048K(306688K), 0.0602681 secs] 674728K->477271K(4160256K), 0.0607463 secs] [Times: user=0.13 sys=0.05, real=0.06 secs]
+2021-12-15T13:05:15.082+0800: [GC (Allocation Failure) 2021-12-15T13:05:15.082+0800: [ParNew: 306688K->34048K(306688K), 0.0656185 secs] 749911K->560944K(4160256K), 0.0660632 secs] [Times: user=0.17 sys=0.03, real=0.07 secs]
+执行结束!共生成对象次数:8036
+Heap
+ par new generation   total 306688K, used 232932K [0x00000006c0000000, 0x00000006d4cc0000, 0x00000006d4cc0000)
+  eden space 272640K,  72% used [0x00000006c0000000, 0x00000006cc239160, 0x00000006d0a40000)
+  from space 34048K, 100% used [0x00000006d2b80000, 0x00000006d4cc0000, 0x00000006d4cc0000)
+  to   space 34048K,   0% used [0x00000006d0a40000, 0x00000006d0a40000, 0x00000006d2b80000)
+ concurrent mark-sweep generation total 3853568K, used 526896K [0x00000006d4cc0000, 0x00000007c0000000, 0x00000007c0000000)
+ Metaspace       used 2624K, capacity 4486K, committed 4864K, reserved 1056768K
+  class space    used 290K, capacity 386K, committed 512K, reserved 1048576K
+只发生了两次Young GC ，CMS的并发GC根本没有发生
+
+4、G1 GC
+java -XX:+UseG1GC -Xms512M -Xmx512M -Xloggc:gc.g1complex.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...  这个结果乱糟糟的
+执行结束!共生成对象次数:8784
+
+用这个命令
+java -XX:+UseG1GC -Xms512M -Xmx512M -Xloggc:gc.g1.log -XX:+PrintGC -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+执行结束!共生成对象次数:8537
+生成的结果比较清爽
+不分代回收了
+
+Evacuation Pause：young 纯年轻代模式转移暂停
+Concurrent Marking 并发标记
+阶段1 Initial Mark 初始标记
+阶段2 Root Region Scan Root区扫描
+阶段3 Concurrent Mark 并发标记
+阶段4 Remark 再次标记
+阶段5 Cleanup 清理
+Evacuation Pause mixed 转移暂停：混合模式
+Full GC Allocation Failure
+
+java -XX:+UseG1GC -Xms4g -Xmx4g  -XX:+PrintGC -XX:+PrintGCDateStamps GCLogAnalysis
+正在执行...
+2021-12-15T19:54:36.772+0800: [GC pause (G1 Evacuation Pause) (young) 204M->65M(4096M), 0.0233262 secs]
+2021-12-15T19:54:36.835+0800: [GC pause (G1 Evacuation Pause) (young) 243M->117M(4096M), 0.0231948 secs]
+2021-12-15T19:54:36.896+0800: [GC pause (G1 Evacuation Pause) (young) 295M->172M(4096M), 0.0242244 secs]
+2021-12-15T19:54:36.960+0800: [GC pause (G1 Evacuation Pause) (young) 350M->224M(4096M), 0.0239226 secs]
+2021-12-15T19:54:37.021+0800: [GC pause (G1 Evacuation Pause) (young) 402M->279M(4096M), 0.0263141 secs]
+2021-12-15T19:54:37.083+0800: [GC pause (G1 Evacuation Pause) (young) 457M->336M(4096M), 0.0318806 secs]
+2021-12-15T19:54:37.151+0800: [GC pause (G1 Evacuation Pause) (young) 514M->394M(4096M), 0.0254680 secs]
+2021-12-15T19:54:37.215+0800: [GC pause (G1 Evacuation Pause) (young) 572M->444M(4096M), 0.0242542 secs]
+2021-12-15T19:54:37.274+0800: [GC pause (G1 Evacuation Pause) (young) 622M->501M(4096M), 0.0292854 secs]
+2021-12-15T19:54:37.339+0800: [GC pause (G1 Evacuation Pause) (young) 685M->571M(4096M), 0.0303718 secs]
+2021-12-15T19:54:37.415+0800: [GC pause (G1 Evacuation Pause) (young) 785M->645M(4096M), 0.0319682 secs]
+2021-12-15T19:54:37.519+0800: [GC pause (G1 Evacuation Pause) (young) 925M->739M(4096M), 0.0417989 secs]
+执行结束!共生成对象次数:8427
+只有Young GC了
+
+
+内存4G，大家效果是差不多的
+当内存特别小的时候，效率都不高，内存不够用导致GC频繁 占用时间长，业务线程受到影响，创建对象数量比较低
+
+学会分析GC日志信息，特点和使用的场景
+
+jmap -heap pid 查看当前GC算法 jps -mlv
