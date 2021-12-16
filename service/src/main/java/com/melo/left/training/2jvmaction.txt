@@ -217,3 +217,12 @@ java -XX:+UseG1GC -Xms4g -Xmx4g  -XX:+PrintGC -XX:+PrintGCDateStamps GCLogAnalys
 学会分析GC日志信息，特点和使用的场景
 
 jmap -heap pid 查看当前GC算法 jps -mlv
+
+发现S0区不够大太小，也会放到Old区
+默认对象到6还是7岁 进入老年代，也不一定非是这种情况，
+
+随着内存增大，CMS暂停时间比并行更短，因为拆分了，对业务没有直接影响
+
+Allocation Failure new一个对象失败，剩余的内存不够用，需要做GC
+
+CMS一般不跟Young区的并行GC搭配  gc.png
