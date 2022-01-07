@@ -107,11 +107,40 @@ IO模型 04- 信号驱动IO  用的比较少
 
 异步最后一步是在被调起方做
 
-IO模型 05-异步IO  Proactor
+IO模型 05-异步式IO  Proactor
 异步IO 真正实现了IO全流程的非阻塞。用户进程发出系统调用后立即返回，内核等待数据准备完成，然后将数据拷贝到
 用户进程缓冲区，然后发送信号告诉用户进程IO操作执行完成
 与SIGIO相比，一个是发送信号告诉用户进程数据准备完毕，一个是IO执行完毕 Windows的IOCP模型
 
 epoll是Reactor
+
+这几种模式发明的时间比较早
+
+全流程处理IO的链给切割开
+流式处理
+
+netty支持NIO BIO Linux-epoll Windows-iocp 支持TCP HTTP UDP，做了通用的壳子，切换不同的组件
+并发不大，BIO厉害
+
+异步JDBC nodejs异步代码非常多
+
+httpserver：netty springboot 搞出的server 无状态的
+webserver：Tomcat web容器环境有要求：支持session，jsp
+jboss：数据库连接放在了Jboss服务器的配置上
+jsp就是servlet，例子代码叫service方法，jsp生成servlet文件，然后编译为class文件
+
+手写网关
+
+netty是一个异步的网络框架
+websocket是二进制的
+
+netty特性：高性能的协议服务器，高吞吐，低延迟，低开销，零拷贝，可扩容，松耦合：网络和业务逻辑分离，使用方便、可维护性好
+
+mina
+一些新的协议是基于UDP做的，变得可靠，比如QQ 交易所提供的api是udp，效率高
+
+越偏底层的代码越不讲究
+越通用越平庸
+自定义参数选择用哪个，去平衡trade-off
 
 分布式事务，都是靠时钟来保证的
