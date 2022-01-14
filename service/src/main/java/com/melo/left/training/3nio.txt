@@ -143,4 +143,12 @@ mina
 越通用越平庸
 自定义参数选择用哪个，去平衡trade-off
 
+netty把底层的网络细节屏蔽掉，netty提供了参数供调整
+
+netty的应用：嵌入式：http server，HTTPSserver， websocketserver，tcp server ,udp server, in vm pipe
+
+k线图 基本上是websocket
+
+订单处理，流式处理
+
 分布式事务，都是靠时钟来保证的
