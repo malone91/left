@@ -9,6 +9,18 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 
+/**
+ * 网关就是管道加过滤器
+ * 用户、业务系统、移动端访问，请求量大
+ * inbound 接入
+ * outbound 高性能高效率低延迟访问backend拿回数据加工处理返回给用户
+ * 现在是一个字符串，未来是一个后端返回的系统，这就是网关的一个原型
+ * inbound outbound都是过滤器，管道
+ * 一个进程可以多个端口，多个进程可绑定一个端口
+ * Nginx多进程，一个端口
+ *
+ * 需要驱动力，内在的，外在的，逃避？
+ */
 public class Client {
     public static void main(String[] args) {
         get("http://localhost:8808/test");
