@@ -23,6 +23,7 @@ import java.io.IOException;
  *
  * 业务网关，流量网关
  * API six
+ * nginx+lua+redis实现诡异的业务网关，用户等级
  */
 public class Client {
     public static void main(String[] args) {
