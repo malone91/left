@@ -37,10 +37,12 @@ public class HttpServer {
         EventLoopGroup workerGroup = new NioEventLoopGroup(1000);
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
+            //网络的参数
             bootstrap.option(ChannelOption.SO_BACKLOG, 128)
                     .option(ChannelOption.TCP_NODELAY, true)
                     .option(ChannelOption.SO_KEEPALIVE, true)
                     .option(ChannelOption.SO_REUSEADDR, true)
+                    //http的接收区和发送区缓冲区大小
                     .option(ChannelOption.SO_RCVBUF, 32 * 1024)
                     .option(ChannelOption.SO_SNDBUF, 32 * 1024)
                     .option(EpollChannelOption.SO_REUSEPORT, true)
@@ -50,7 +52,7 @@ public class HttpServer {
                     .childHandler(new HttpInitializer(sslContext));
             Channel channel = bootstrap.bind(port).sync().channel();
             log.info("启动netty http服务，监听地址和端口为" + (ssl ? "https" : "http") + "://127.0.0.1" + port);
-            //sync 卡住进程不结束 加上显示的同步操作
+            //所有操作是异步的，所以加个同步sync，会卡住进程不结束 加上显示的同步操作
             channel.closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();

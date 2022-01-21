@@ -7,7 +7,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.ssl.SslContext;
 
-public class HttpInitializer implements ChannelInitializer {
+public class HttpInitializer extends ChannelInitializer {
 
     private final SslContext sslContext;
 
