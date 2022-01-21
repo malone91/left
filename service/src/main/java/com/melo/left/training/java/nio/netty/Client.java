@@ -20,6 +20,9 @@ import java.io.IOException;
  * Nginx多进程，一个端口
  *
  * 需要驱动力，内在的，外在的，逃避？
+ *
+ * 业务网关，流量网关
+ * API six
  */
 public class Client {
     public static void main(String[] args) {
