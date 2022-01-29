@@ -171,9 +171,96 @@ wrk -c 40 -d 30s --latency url
 应对策略：稳定性建设，混沌工程，
 容量，爆炸半径，工程方面积累与改进
 
-TPS当前市场最大：
+容量：TPS当前市场最大：
 一天有86400。淘宝一天3000万订单 京东一两千万
 三四百的TPS
 支付宝双十一TPS最高45万左右，国内最大的并发
+双十一搞5-10倍数量的机器
+爆炸半径：70%的故障是变动引起的，比如代码，数据库，环境，能不能有些办法控制这些范围。一次相关上线的影响范围
+缩小到一个模块内，其他模块不会受影响。微服务也是把爆炸半径缩小了
+工程方面积累与改进：天灾，人祸
+
+netty怎么实现高性能？
+网络开发框架:异步，事件驱动，基于NIO
+适用于：服务端，客户端，TCP/UDP
+
+从事件处理机制
+Event Mediator 事件分发器 取号器，等待服务，EventChannel相当于桌子，被提供服务
+要过来吃放的人，成为真正的顾客
+
+到React模型
+Web服务器把输入的各种请求hold住，再分发给其他的服务员，进行服务
+
+流水线加Handler方式最大化能够有有更多的灵活性，不同协议或报文处理加不同的handler
+老板少工人多 worker/boss group 线程池
+EventLoop是一个不断轮询的单线程的处理器，单线程没有上下文切换和资源的浪费 线程
+
+粘包与拆包在应用层，上层
+
+MTU 最大传输单元 1500Byte默认
+MSS 最大分段大小 1460Byte  少了40，TCP头和IP的头分别占用了20字节
+
+网络拥堵与Nagle算法优化 TCP_NODELAY
+Nagle算法：发送数据 的缓冲区满，达到超时200ms，把数据都丢给网络发出去
+Socket变成，调用send和receive时并不是真正的发或者收 Nagle算法决定是不是合并到一块，那么会有小的包延迟比较高
+优化条件：缓冲区满，达到超时200ms
+
+操作系统会优化，所以我们可以把这个算法丢掉 延迟敏感 可以直接调TCP的参数
+
+http的断点续传
+
+1.6k数据性能比1k差很多 尽量卡到MSS
+
+还有一个连接优化：端口占用的问题
+
+三次握手：在吗？ 我在，你在不在？ 在 然后建立了连接
+谁接到对方的ack，就可以把自己设置为建立连接
+假如第三次握手没收到怎么办？不怎么办，对客户端来说已经建立了，继续发消息，会超时报错，出现在这还好。
+
+TCP连接必须经过时间2MSL后才真正释放掉
+四次挥手：客户端的 TIME_WAIT 状态 客户端本地要占用端口 等待2个MSL 时长，Linux2min，Windows1min 也就是4/2分钟，然后才把TIME_WAIT关闭
+
+TIME_WAIT就是空窗期
+
+windows命令 netstat -anot  有好多TIME_WAIT 等几分钟才关闭 再启动，端口占用会失败
+
+1、降低MSL 降低Socket的回收周期
+2、端口打开复用的参数 在没有完全释放的时候可以直接通用掉
+
+netty优化
+1、不要阻塞EventLoop
+2、系统参数优化
+ulimit -a /proc/sys/net/ipv4/tcp_fin_timeout,TcpTimedWaitDelay 降低Socket的回收周期，Linux和Windows上的参数
+1025--->可以调整到6万多 一切都是文件
+
+3、缓冲区优化
+SO_RCVBUF SO_SNDBUF
+SO_BACKLOG 真正通信的连接的个数
+SO_REUSEADDR 重用绑定的端口和地址
+
+4、心跳周期优化
+心跳机制与断线重连 Socket连接断了，心跳然后重新连接  和数据连接池相关 发个空包或一个sql select 1  jdbd有一个更方便的isValid
+5、内存与ByteBuffer优化
+DirectBuffer与HeapBuffer 把真实的物理内存映射到内存里 不用来回写，指定使用堆外原生内存 业务用堆内存 Netty的native memory自己反复使用，不用再申请内存
+减少来回的拷贝。
+6、其他优化
+ioRatio 50:50
+watermark 水位 缓冲区相关， 是一个配置参数
+trafficShaping流量整形 是一个handler，配置到pipeline中
+
+Lua连接Redis  ---->业务网关
+
+springcloud gateway基于netty
+
+最简单的网关就是个代理，接收请求，代替去请求后端服务
+然后中间加过滤器，就是handler，改变http的头，改变返回数据的报文信息
+然后中间加router，路由，负载均衡
+
+httpclient换成netty的client
+
+重复利用内存，效率比较高，不用重新申请内存
+.option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+
+猫大人网关
 
 分布式事务，都是靠时钟来保证的
