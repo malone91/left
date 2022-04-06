@@ -263,4 +263,10 @@ httpclient换成netty的client
 
 猫大人网关
 
+######
+单线程最怕卡死，IO和业务处理分开 和线程池分离 http的请求服务的时候，线程池没有在当前线程中写
+
+BECH
+网关代码：filter inbound outbound router application
+
 分布式事务，都是靠时钟来保证的

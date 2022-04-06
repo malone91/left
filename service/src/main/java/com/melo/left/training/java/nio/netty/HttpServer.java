@@ -1,5 +1,6 @@
 package com.melo.left.training.java.nio.netty;
 
+import com.google.common.collect.Maps;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
@@ -12,6 +13,11 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * bytebuffer.default.direct.heap
@@ -67,5 +73,14 @@ public class HttpServer {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
         }
+    }
+
+    public static void main(String[] args) {
+        Map<String, AtomicInteger> countMap = Maps.newHashMap();
+        List<String> source = Arrays.asList("hello", "world", "hello", "welcome", "hello", "hello", "welcome", "simon");
+        for (String s : source) {
+            countMap.computeIfAbsent(s, key -> new AtomicInteger()).getAndIncrement();
+        }
+        System.out.println(countMap);
     }
 }
