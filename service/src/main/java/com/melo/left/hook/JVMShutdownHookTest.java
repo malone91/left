@@ -3,6 +3,8 @@ package com.melo.left.hook;
 /**
  * jps 手动Linux是 kill pid命令执行，然后执行勾子方法，手动Windows是 taskkill -f -pid 26240 或 tskill 36388
  * 自动 如下的loop变量监听，执行完while则执行勾子方法
+ *
+ * kill就是kill -15    ; kill -9 是强行杀死
  */
 public class JVMShutdownHookTest {
     public static void main(String[] args) throws Exception {
