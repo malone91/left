@@ -1,0 +1,3 @@
+melo=com.melo.left.dubbospi.MyDubboImpl
+wrapper=com.melo.left.dubbospi.MyDubboWrapper
+wrapperPlus=com.melo.left.dubbospi.MyDubboPlusWrapper
