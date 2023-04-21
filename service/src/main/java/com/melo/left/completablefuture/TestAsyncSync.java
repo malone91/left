@@ -11,8 +11,10 @@ public class TestAsyncSync {
     public static void main(String[] args) {
         CompletableFuture<String> future = new CompletableFuture<>();
         System.out.println(LocalDateTime.now().getSecond());
+        System.out.println("main" + Thread.currentThread().getContextClassLoader());
         new Thread(() -> {
             try {
+                System.out.println("sub" +Thread.currentThread().getContextClassLoader());
                 Thread.sleep(7000);
                 future.complete("done");
             } catch (InterruptedException e) {
