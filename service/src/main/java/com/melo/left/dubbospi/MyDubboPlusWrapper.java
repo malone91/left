@@ -1,6 +1,6 @@
 package com.melo.left.dubbospi;
 
-import com.alibaba.dubbo.common.URL;
+import org.apache.dubbo.common.URL;
 
 public class MyDubboPlusWrapper implements MyDubbo{
 

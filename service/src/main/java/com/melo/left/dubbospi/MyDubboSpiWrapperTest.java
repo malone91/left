@@ -1,7 +1,7 @@
 package com.melo.left.dubbospi;
 
-import com.alibaba.dubbo.common.URL;
-import com.alibaba.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.extension.ExtensionLoader;
 
 public class MyDubboSpiWrapperTest {
 
