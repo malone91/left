@@ -29,6 +29,7 @@
 /scs/
 /velocity.log.1
 /service/target/
+/gateway/target/
 /test/target/
 /api/target/
 /api/api.iml
