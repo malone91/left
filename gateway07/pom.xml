@@ -19,7 +19,7 @@
         <dependency>
             <groupId>org.apache.shiro</groupId>
             <artifactId>shiro-core</artifactId>
-            <version>1.3.2</version>
+            <version>1.10.0</version>
         </dependency>
         <!--    JSON网络令牌，轻便的安全跨平台传输格式，在不同实体间安全传输信息    -->
         <dependency>
