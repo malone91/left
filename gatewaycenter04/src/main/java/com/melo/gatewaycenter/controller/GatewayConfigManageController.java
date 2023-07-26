@@ -10,7 +10,7 @@ import javax.annotation.Resource;
 import java.util.List;
 
 @RestController
-@RequestMapping("/melo/admin/cofig")
+@RequestMapping("/melo/admin/config")
 public class GatewayConfigManageController {
 
     @Resource
