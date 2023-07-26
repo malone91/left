@@ -1,4 +1,4 @@
-package com.melo.gatewaycenter.interfaces;
+package com.melo.gatewaycenter.infrastructure.repository;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.melo.gatewaycenter.domain.manage.model.vo.GatewayServerDetailVO;
