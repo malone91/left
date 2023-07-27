@@ -10,12 +10,12 @@ public class Result<T> implements Serializable {
 
     private String code;
     private String info;
-    private T t;
+    private T data;
 
-    public Result(String code, String info, T t) {
+    public Result(String code, String info, T data) {
         this.code = code;
         this.info = info;
-        this.t = t;
+        this.data = data;
     }
 
     public String getCode() {
@@ -31,7 +31,7 @@ public class Result<T> implements Serializable {
         return info;
     }
 
-    public T getT() {
-        return t;
+    public T getData() {
+        return data;
     }
 }

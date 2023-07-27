@@ -1,0 +1,9 @@
+server:
+  port: 82
+
+api-gateway:
+  address: http://localhost:81
+  groupId: 11
+  gatewayId: api-gateway-G7
+  gatewayName: 支付网关
+  gatewayAddress: 127.0.0.1:7399
