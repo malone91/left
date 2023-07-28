@@ -21,7 +21,7 @@ public class DefaultGatewaySessionFactory implements GatewaySessionFactory {
         DataSourceFactory dataSourceFactory = new UnpooledDataSourceFactory();
         dataSourceFactory.setProperties(configuration, uri);
         DataSource dataSource = dataSourceFactory.getDataSource();
-        Executor executor = configuration.newExecutor(dataSource.getConnection());
+         Executor executor = configuration.newExecutor(dataSource.getConnection());
         return new DefaultGatewaySession(configuration, uri, executor);
     }
 }
