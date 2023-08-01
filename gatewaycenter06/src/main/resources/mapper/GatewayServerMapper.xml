@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.melo.gatewaycenter.infrastructure.mapper.GatewayServerMapper">
+
+    <resultMap id="gatewayServerMap" type="com.melo.gatewaycenter.infrastructure.po.GatewayServer">
+        <id column="id" property="id"/>
+        <id column="group_id" property="groupId"/>
+        <id column="group_name" property="groupName"/>
+    </resultMap>
+
+    <select id="list" resultMap="gatewayServerMap">
+        SELECT id, group_id, group_name FROM gateway_server
+    </select>
+
+</mapper>
