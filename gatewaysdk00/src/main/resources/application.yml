@@ -1,0 +1,8 @@
+server:
+  port: 8003
+
+api-gateway-sdk:
+  address: http://localhost:81
+  systemId: api-gateway-sdk-00
+  systemName: 网关SDK测试
+  systemRegistry: zookeeper://127.0.0.1:2181

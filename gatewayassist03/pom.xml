@@ -166,6 +166,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
                     <artifactSet>
                         <includes>
                             <!--  让gateway09可以打包到assist中的配置，以后把assist给外部使用时，不用再额外引用gateway09了  -->
